@@ -19,7 +19,6 @@ package tclinterpreter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,14 +56,14 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Set' command definition
          */
         COMMANDS.put("set", node -> {
-            context.setVaribale(node.getChildren().get(0).getValue(), node.getChildren().get(1).getValue());
+            context.setVaribale(readOPNode(node.getChildren().get(0)), readOPNode(node.getChildren().get(1)));
         });
 
         /*
          'Unset' command definition
          */
         COMMANDS.put("unset", node -> {
-            context.deleteVaribale(node.getChildren().get(0).getValue());
+            context.deleteVaribale(readOPNode(node.getChildren().get(0)));
         });
 
         /*
@@ -106,9 +105,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @param command
      */
     protected void executeCommand(TclNode command) {
-        COMMANDS.get(COMMANDS.keySet().stream().filter(cmd -> {
-            return cmd.equals(command.getValue());
-        }).findFirst().get()).accept(command);
+        COMMANDS.get(command.getValue()).accept(command);
     }
 
     /**
@@ -120,34 +117,32 @@ public class TclInterpreter extends AbstractTclInterpreter {
     protected String readOPNode(TclNode node) {
         StringBuilder str = new StringBuilder("");
         for (TclNode child : node.getChildren()) {
-            if (null != child.type) {
-                switch (child.type) {
-                    case NAME:
-                        str.append(context.getVaribale(child.getValue()));
-                        break;
-                    case QSTRING:
-                        str.append(child.getValue());
-                        break;
-                    case CURLYSTRING:
-                        str.append(child.getValue());
-                        break;
-                    case PROGRAM:
-                        AbstractTclInterpreter subinterpreter
-                                = new TclInterpreter(new TclParser(new TclLexer(child.getValue())), context, false);
-                        String result = null;
-                        try {
-                            result = subinterpreter.run();
-                        } catch (AbstractTclParser.TclParserError ex) {
-                            Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                        str.append(result);
-                        break;
-                    case WORD:
-                        str.append(child.getValue());
-                        break;
-                    default:
-                        break;
-                }
+            switch (child.type) {
+                case NAME:
+                    str.append(context.getVaribale(child.getValue()));
+                    break;
+                case QSTRING:
+                    str.append(child.getValue());
+                    break;
+                case CURLYSTRING:
+                    str.append(child.getValue());
+                    break;
+                case PROGRAM:
+                    AbstractTclInterpreter subinterpreter
+                            = new TclInterpreter(new TclParser(new TclLexer(child.getValue())), context, false);
+                    String result = null;
+                    try {
+                        result = subinterpreter.run();
+                    } catch (AbstractTclParser.TclParserError ex) {
+                        Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    str.append(result);
+                    break;
+                case WORD:
+                    str.append(child.getValue());
+                    break;
+                default:
+                    break;
             }
         }
         return str.toString();
@@ -160,9 +155,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
      */
     protected void executeProgram(TclNode program) {
         List<TclNode> chld = program.getChildren();
-        for (TclNode node : chld) {
-            executeCommand(node);
-        }
+        chld.stream().forEach(this::executeCommand);
     }
 
     /**

@@ -18,7 +18,6 @@ package tclinterpreter;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Context for Tcl interpreters containing variables and other attributes
@@ -72,10 +71,7 @@ public class TclInterpreterContext {
      * @return
      */
     public String getVaribale(String name) {
-        return variables.get(variables.keySet().stream()
-                .filter(cmd -> {
-                    return cmd.equals(name);
-                }).findFirst().get());
+        return variables.get(name);
     }
 
     /**
@@ -84,15 +80,7 @@ public class TclInterpreterContext {
      * @param name variable name
      */
     public void deleteVaribale(String name) {
-        String key;
-        try {
-            key = variables.keySet().stream().filter(cmd -> {
-                return cmd.equals(name);
-            }).findFirst().get();
-        } catch (NoSuchElementException ex) {
-            return;
-        }
-        variables.remove(key);
+        variables.remove(name);
     }
 
     /**
@@ -102,15 +90,6 @@ public class TclInterpreterContext {
      * @param value variable value
      */
     public void setVaribale(String name, String value) {
-        String key;
-        try {
-            key = variables.keySet().stream().filter(cmd -> {
-                return cmd.equals(name);
-            }).findFirst().get();
-        } catch (NoSuchElementException ex) {
-            variables.put(name, value);
-            return;
-        }
-        variables.replace(key, name);
+        variables.put(name, value);
     }
 }

@@ -89,59 +89,68 @@ public class TclParser extends AbstractTclParser {
                         operand = new TclNode(TclNodeType.OPERAND).setValue(currenttoken.getValue());
                         node.getChildren().add(operand);
                     }
-                    if (currenttoken.type == TclTokenType.WORD) {
-                        /*
-                         A variable substitution
-                         */
-                        operand.getChildren().add(new TclNode(TclNodeType.WORD).
-                                setValue(currenttoken.getValue()));
-                    } else if (currenttoken.type == TclTokenType.DOLLAR) {
-                        /*
-                         A name as an operand
-                         */
-                        advanceToken(TclTokenType.NAME);
-                        operand.getChildren().add(new TclNode(TclNodeType.NAME).
-                                setValue(currenttoken.getValue()));
-                    } else if (currenttoken.type == TclTokenType.LEFTCURL) {
-                        /*
-                         A string in curly brackets
-                         */
-                        advanceToken(TclTokenType.STRING, TclTokenType.RIGHTCURL);
-                        if (currenttoken.type == TclTokenType.STRING) {
-                            operand.getChildren().add(new TclNode(TclNodeType.CURLYSTRING).
+                    /*
+                     Analysing tokens corresponding to operands
+                     */
+                    switch (currenttoken.type) {
+                        case WORD:
+                            /*
+                             A variable substitution
+                             */
+                            operand.getChildren().add(new TclNode(TclNodeType.WORD).
                                     setValue(currenttoken.getValue()));
-                            advanceToken(TclTokenType.RIGHTCURL);
-                        } else {
-                            operand.getChildren().add(new TclNode(TclNodeType.CURLYSTRING).
-                                    setValue(""));
-                        }
-                    } else if (currenttoken.type == TclTokenType.LEFTBR) {
-                        /*
-                         Commands in brackets
-                         */
-                        advanceToken(TclTokenType.STRING, TclTokenType.RIGHTBR);
-                        if (currenttoken.type == TclTokenType.STRING) {
-                            operand.getChildren().add(new TclNode(TclNodeType.PROGRAM).
+                            break;
+                        case DOLLAR:
+                            /*
+                             A name as an operand
+                             */
+                            advanceToken(TclTokenType.NAME);
+                            operand.getChildren().add(new TclNode(TclNodeType.NAME).
                                     setValue(currenttoken.getValue()));
-                            advanceToken(TclTokenType.RIGHTBR);
-                        } else {
-                            operand.getChildren().add(new TclNode(TclNodeType.PROGRAM).
-                                    setValue(""));
-                        }
-                    } else if (currenttoken.type == TclTokenType.LEFTQ) {
-                        /*
-                         A string in quotes
-                         */
-                        advanceToken(TclTokenType.STRING, TclTokenType.RIGHTQ);
-                        if (currenttoken.type == TclTokenType.STRING) {
-                            operand.getChildren().addAll(parseString(currenttoken.getValue()));
-                            advanceToken(TclTokenType.RIGHTQ);
-                        } else {
-                            operand.getChildren().add(new TclNode(TclNodeType.QSTRING).
-                                    setValue(""));
-                        }
-                    } else {
-                        throw error;
+                            break;
+                        case LEFTCURL:
+                            /*
+                             A string in curly brackets
+                             */
+                            advanceToken(TclTokenType.STRING, TclTokenType.RIGHTCURL);
+                            if (currenttoken.type == TclTokenType.STRING) {
+                                operand.getChildren().add(new TclNode(TclNodeType.CURLYSTRING).
+                                        setValue(currenttoken.getValue()));
+                                advanceToken(TclTokenType.RIGHTCURL);
+                            } else {
+                                operand.getChildren().add(new TclNode(TclNodeType.CURLYSTRING).
+                                        setValue(""));
+                            }
+                            break;
+                        case LEFTBR:
+                            /*
+                             Commands in brackets
+                             */
+                            advanceToken(TclTokenType.STRING, TclTokenType.RIGHTBR);
+                            if (currenttoken.type == TclTokenType.STRING) {
+                                operand.getChildren().add(new TclNode(TclNodeType.PROGRAM).
+                                        setValue(currenttoken.getValue()));
+                                advanceToken(TclTokenType.RIGHTBR);
+                            } else {
+                                operand.getChildren().add(new TclNode(TclNodeType.PROGRAM).
+                                        setValue(""));
+                            }
+                            break;
+                        case LEFTQ:
+                            /*
+                             A string in quotes
+                             */
+                            advanceToken(TclTokenType.STRING, TclTokenType.RIGHTQ);
+                            if (currenttoken.type == TclTokenType.STRING) {
+                                operand.getChildren().addAll(parseString(currenttoken.getValue()));
+                                advanceToken(TclTokenType.RIGHTQ);
+                            } else {
+                                operand.getChildren().add(new TclNode(TclNodeType.QSTRING).
+                                        setValue(""));
+                            }
+                            break;
+                        default:
+                            throw error;
                     }
                 }
             }

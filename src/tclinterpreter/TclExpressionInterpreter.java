@@ -56,18 +56,19 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
         /*
         Operation depends on the node's value
          */
-        if (node.getValue().equals("+")) {
-            result += CalculateNode(node2);
-
-        } else if (node.getValue().equals("-")) {
-            result -= CalculateNode(node2);
-
-        } else if (node.getValue().equals("*")) {
-            result *= CalculateNode(node2);
-
-        } else if (node.getValue().equals("/")) {
-            result /= CalculateNode(node2);
-
+        switch (node.getValue()) {
+            case "+":
+                result += CalculateNode(node2);
+                break;
+            case "-":
+                result -= CalculateNode(node2);
+                break;
+            case "*":
+                result *= CalculateNode(node2);
+                break;
+            case "/":
+                result /= CalculateNode(node2);
+                break;
         }
         return result;
     }
