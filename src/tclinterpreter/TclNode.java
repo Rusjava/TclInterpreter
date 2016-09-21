@@ -90,9 +90,9 @@ public class TclNode {
                 .append(getValue())
                 .append(" (");
         List<TclNode> chld = getChildren();
-        for (TclNode node : chld) {
+        chld.stream().forEach((node) -> {
             str.append(node).append("; ");
-        }
+        });
         return str.append(")").toString();
     }
 }

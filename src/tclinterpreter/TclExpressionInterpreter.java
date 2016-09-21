@@ -76,7 +76,6 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
     @Override
     public String run() throws AbstractTclParser.TclParserError {
         String result=Double.toString(CalculateNode(parser.parse()));
-        output.append(result);
         return result;
     }
 

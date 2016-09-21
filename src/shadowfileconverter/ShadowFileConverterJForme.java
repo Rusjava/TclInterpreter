@@ -47,7 +47,7 @@ import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.CancellationException;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractAction;
@@ -100,9 +100,10 @@ public class ShadowFileConverterJForme extends javax.swing.JFrame {
     public ShadowFileConverterJForme() {
         this.maxNrays = 100000;
         this.direction = false;
-        maxRayNumberBox = getIntegerFormattedTextField(100000, 1, 10000000);
-        beginColumn = getIntegerFormattedTextField(1, 1, ShadowFiles.MAX_NCOL);
-        endColumn = getIntegerFormattedTextField(18, 1, ShadowFiles.MAX_NCOL);
+        this.maxRayNumberBox = getIntegerFormattedTextField(100000, 1, 10000000);
+        this.beginColumn = getIntegerFormattedTextField(1, 1, ShadowFiles.MAX_NCOL);
+        this.endColumn = getIntegerFormattedTextField(18, 1, ShadowFiles.MAX_NCOL);
+        this.interpreter = new TclInterpreter(new TclParser(new TclLexer("")), null, true);
         initComponents();
         ButtonGroup LFGroup = new ButtonGroup();
         LFGroup.add(DefaultJRadioButtonMenuItem);
@@ -381,7 +382,7 @@ public class ShadowFileConverterJForme extends javax.swing.JFrame {
                 } catch (InterruptedException | CancellationException ex) {
 
                 } catch (ExecutionException ex) {
-                    
+
                 }
                 working = false;
                 actionJButton.setText("Start");
@@ -507,7 +508,7 @@ public class ShadowFileConverterJForme extends javax.swing.JFrame {
         //Showing help and reading the result
         int option = JOptionPane.showConfirmDialog(null, message, "Script", JOptionPane.OK_CANCEL_OPTION);
         if (option == JOptionPane.OK_OPTION) {
-            interpreter=new TclInterpreter(new TclParser(new TclLexer(scriptArea.getText())), null, true);
+            interpreter = new TclInterpreter(new TclParser(new TclLexer(scriptArea.getText())), null, true);
         }
 
     }//GEN-LAST:event_ScriptJMenuItemActionPerformed
@@ -788,7 +789,7 @@ public class ShadowFileConverterJForme extends javax.swing.JFrame {
         int nStart, nEnd, kLen;
         try {
             String text = doc.getText(0, doc.getLength() - 1);
-            for (Entry<String, Consumer<TclNode>> keyWordEntry: TclInterpreter.COMMANDS.entrySet()) {
+            for (Entry<String, Function<TclNode, String>> keyWordEntry : ((TclInterpreter)interpreter).COMMANDS.entrySet()) {
                 kLen = keyWordEntry.getKey().length();
                 nStart = start - kLen < 0 ? 0 : start - kLen;
                 nEnd = end + kLen > doc.getLength() - 1 ? doc.getLength() - 1 : end + kLen;
@@ -810,7 +811,7 @@ public class ShadowFileConverterJForme extends javax.swing.JFrame {
      */
     protected void removeHighlight(JTextComponent scriptArea, int start, int end) {
         int nStart, kLen;
-        for (Entry<String, Consumer<TclNode>> keyWordEntry: TclInterpreter.COMMANDS.entrySet()) {
+        for (Entry<String, Function<TclNode, String>> keyWordEntry : ((TclInterpreter)interpreter).COMMANDS.entrySet()) {
             kLen = keyWordEntry.getKey().length();
             nStart = start - kLen < 0 ? 0 : start - kLen;
             for (Highlighter.Highlight highlight : scriptArea.getHighlighter().getHighlights()) {

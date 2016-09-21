@@ -16,6 +16,10 @@
  */
 package tclinterpreter;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
+
 /**
  *
  * @author Ruslan Feshchenko
@@ -24,9 +28,14 @@ package tclinterpreter;
 public abstract class AbstractTclInterpreter {
 
     /**
+     * A print stream for interpreter output and errors
+     */
+    protected PrintStream out;
+
+    /**
      * A string for the script output
      */
-    protected StringBuilder output = new StringBuilder("Tcl> ");
+    protected StringBuilder output = new StringBuilder("");
 
     /**
      * Current parser
@@ -34,10 +43,55 @@ public abstract class AbstractTclInterpreter {
     protected AbstractTclParser parser;
 
     /**
-     * The local context, which includes varibales, the pointer to the upper
+     * The local context, which includes variables, the pointer to the upper
      * level context and attributes
      */
     protected TclInterpreterContext context;
+
+    /**
+     * A full constructor with output stream
+     *
+     * @param parser a Tcl parser to use
+     * @param context the upper level context pointer or the current context
+     * pointer
+     * @param newcontext Should a new context should be created of a given
+     * context used
+     * @param out an output stream
+     * @param encoding an encoding to be used for output encoding
+     */
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, OutputStream out, String encoding) {
+        this.parser = parser;
+        if (newcontext) {
+            this.context = new TclInterpreterContext(context);
+        } else {
+            this.context = context;
+        }
+        try {
+            this.out = new PrintStream(out, true, encoding);
+        } catch (UnsupportedEncodingException ex) {
+            this.out = new PrintStream(out, true);
+        }
+    }
+
+    /**
+     * A full constructor with output print stream
+     *
+     * @param parser a Tcl parser to use
+     * @param context the upper level context pointer or the current context
+     * pointer
+     * @param newcontext Should a new context should be created of a given
+     * context used
+     * @param out an output stream
+     */
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, PrintStream out) {
+        this.parser = parser;
+        if (newcontext) {
+            this.context = new TclInterpreterContext(context);
+        } else {
+            this.context = context;
+        }
+        this.out = out;
+    }
 
     /**
      * Constructor taking a parser and a context as an argument
@@ -45,15 +99,11 @@ public abstract class AbstractTclInterpreter {
      * @param parser
      * @param context the upper level context pointer or the current context
      * pointer
-     * @param newcontext Should a new context be created
+     * @param newcontext Should a new context should be created of a given
+     * context used
      */
-    public AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext) {
-        this.parser = parser;
-        if (newcontext) {
-            this.context = new TclInterpreterContext(context);
-        } else {
-            this.context = context;
-        }
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext) {
+        this(parser, context, newcontext, System.out);
     }
 
     /**
