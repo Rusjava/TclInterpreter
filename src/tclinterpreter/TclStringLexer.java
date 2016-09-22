@@ -34,6 +34,52 @@ public class TclStringLexer extends AbstractTclLexer {
     }
 
     /**
+     * Backslash substitution
+     *
+     * @return
+     */
+    protected String replaceSymbol() {
+        StringBuilder subst = new StringBuilder();
+        advancePosition();
+        switch (currentchar) {
+            case 'a':
+                subst.append(0x07);
+                break;
+            case 'b':
+                subst.append(0x08);
+                break;
+            case 'f':
+                subst.append(0x0c);
+                break;
+            case 'n':
+                subst.append(0x0a);
+                break;
+            case 'r':
+                subst.append(0x0d);
+                break;
+            case 't':
+                subst.append(0x09);
+                break;
+            case 'v':
+                subst.append(0x0b);
+                break;
+            case '0':
+                subst.append(readOctalNumber());
+                break;
+            case 'x':
+                subst.append(readHexNumber());
+                break;
+            case 'u':
+                subst.append(readUnicode());
+                break;
+            default:
+                subst.append(currentchar);
+
+        }
+        return subst.toString();
+    }
+
+    /**
      * Reading alphanumerical names from the script
      *
      * @return
@@ -44,9 +90,10 @@ public class TclStringLexer extends AbstractTclLexer {
                 || Character.isLetter(currentchar)
                 || currentchar == '_') {
             if (currentchar == '\\') {
-                advancePosition();
+                name.append(replaceSymbol());
+            } else {
+                name.append(currentchar);
             }
-            name.append(currentchar);
             advancePosition();
         }
         return name.toString();
@@ -125,5 +172,17 @@ public class TclStringLexer extends AbstractTclLexer {
              */
             return new TclToken(TclTokenType.STRING).setValue(readSubString());
         }
+    }
+
+    private String readOctalNumber() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private String readHexNumber() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private String readUnicode() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
