@@ -76,6 +76,7 @@ public class TclStringLexer extends AbstractTclLexer {
                 subst.append(currentchar);
 
         }
+        advancePosition();
         return subst.toString();
     }
 
@@ -93,8 +94,8 @@ public class TclStringLexer extends AbstractTclLexer {
                 name.append(replaceSymbol());
             } else {
                 name.append(currentchar);
+                advancePosition();
             }
-            advancePosition();
         }
         return name.toString();
     }
@@ -105,12 +106,16 @@ public class TclStringLexer extends AbstractTclLexer {
      * @return
      */
     protected String readSubString() {
-        String string = "";
+        StringBuilder string = new StringBuilder();
         while (currentchar != '[' && currentchar != 0 && currentchar != '$') {
-            string += currentchar;
-            advancePosition();
+            if (currentchar == '\\') {
+                string.append(replaceSymbol());
+            } else {
+                string.append(currentchar);
+                advancePosition();
+            }
         }
-        return string;
+        return string.toString();
     }
 
     /**
@@ -174,15 +179,48 @@ public class TclStringLexer extends AbstractTclLexer {
         }
     }
 
-    private String readOctalNumber() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    /**
+     * Reading an octal number. The current position is at the last digit at the end
+     *
+     * @return
+     */
+    protected String readOctalNumber() {
+        StringBuilder oNumber = new StringBuilder("");
+        while (Character.isDigit(peek()) && (peek() != '8' || peek() != '9')) {
+            advancePosition();
+            oNumber.append(currentchar);
+        }
+        return Integer.valueOf(oNumber.toString(), 8).toString();
     }
 
-    private String readHexNumber() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    /**
+     * Reading a hex number. The current position is at the last digit at the end
+     *
+     * @return
+     */
+    protected String readHexNumber() {
+        StringBuilder hNumber = new StringBuilder("");
+        while (Character.isDigit(peek())
+                || (Character.toLowerCase(peek()) >= 'a' && Character.toLowerCase(peek()) <= 'f')) {
+            advancePosition();
+            hNumber.append(currentchar);
+        }
+        return Integer.valueOf(hNumber.toString(), 16).toString();
     }
 
-    private String readUnicode() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    /**
+     * Reading character specified by its Unicode. The current position is at the last digit at the end
+     *
+     * @return
+     */
+    protected String readUnicode() {
+        StringBuilder hNumber = new StringBuilder("");
+        while ((Character.isDigit(peek())
+                || (Character.toLowerCase(peek()) >= 'a' && Character.toLowerCase(peek()) <= 'f'))
+                && hNumber.length() < 4) {
+            advancePosition();
+            hNumber.append(currentchar);
+        }
+        return "" + (char) Integer.parseInt(hNumber.toString());
     }
 }

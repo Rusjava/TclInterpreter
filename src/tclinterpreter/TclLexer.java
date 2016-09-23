@@ -94,7 +94,7 @@ public class TclLexer extends AbstractTclLexer {
     }
 
     /**
-     * Reading end of line symbol
+     * Reading end of line symbol with whitespace if present
      */
     protected void readEOL() {
         while (Character.isWhitespace(currentchar)) {
