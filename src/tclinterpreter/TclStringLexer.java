@@ -34,53 +34,6 @@ public class TclStringLexer extends AbstractTclLexer {
     }
 
     /**
-     * Backslash substitution
-     *
-     * @return
-     */
-    protected String replaceSymbol() {
-        StringBuilder subst = new StringBuilder();
-        advancePosition();
-        switch (currentchar) {
-            case 'a':
-                subst.append(0x07);
-                break;
-            case 'b':
-                subst.append(0x08);
-                break;
-            case 'f':
-                subst.append(0x0c);
-                break;
-            case 'n':
-                subst.append(0x0a);
-                break;
-            case 'r':
-                subst.append(0x0d);
-                break;
-            case 't':
-                subst.append(0x09);
-                break;
-            case 'v':
-                subst.append(0x0b);
-                break;
-            case '0':
-                subst.append(readOctalNumber());
-                break;
-            case 'x':
-                subst.append(readHexNumber());
-                break;
-            case 'u':
-                subst.append(readUnicode());
-                break;
-            default:
-                subst.append(currentchar);
-
-        }
-        advancePosition();
-        return subst.toString();
-    }
-
-    /**
      * Reading alphanumerical names from the script
      *
      * @return
@@ -123,7 +76,7 @@ public class TclStringLexer extends AbstractTclLexer {
      *
      * @return
      */
-    protected String readString() {
+    protected String readCommandString() {
         StringBuilder string = new StringBuilder("");
         while (currentchar != ']' && currentchar != 0) {
             string.append(currentchar);
@@ -165,7 +118,7 @@ public class TclStringLexer extends AbstractTclLexer {
             /*
              Reading and returning a string representing a script
              */
-            return new TclToken(TclTokenType.STRING).setValue(readString());
+            return new TclToken(TclTokenType.STRING).setValue(readCommandString());
         } else if (currentchar == 0) {
             /*
              Reading and returning end of file
@@ -177,50 +130,5 @@ public class TclStringLexer extends AbstractTclLexer {
              */
             return new TclToken(TclTokenType.STRING).setValue(readSubString());
         }
-    }
-
-    /**
-     * Reading an octal number. The current position is at the last digit at the end
-     *
-     * @return
-     */
-    protected String readOctalNumber() {
-        StringBuilder oNumber = new StringBuilder("");
-        while (Character.isDigit(peek()) && (peek() != '8' || peek() != '9')) {
-            advancePosition();
-            oNumber.append(currentchar);
-        }
-        return Integer.valueOf(oNumber.toString(), 8).toString();
-    }
-
-    /**
-     * Reading a hex number. The current position is at the last digit at the end
-     *
-     * @return
-     */
-    protected String readHexNumber() {
-        StringBuilder hNumber = new StringBuilder("");
-        while (Character.isDigit(peek())
-                || (Character.toLowerCase(peek()) >= 'a' && Character.toLowerCase(peek()) <= 'f')) {
-            advancePosition();
-            hNumber.append(currentchar);
-        }
-        return Integer.valueOf(hNumber.toString(), 16).toString();
-    }
-
-    /**
-     * Reading character specified by its Unicode. The current position is at the last digit at the end
-     *
-     * @return
-     */
-    protected String readUnicode() {
-        StringBuilder hNumber = new StringBuilder("");
-        while ((Character.isDigit(peek())
-                || (Character.toLowerCase(peek()) >= 'a' && Character.toLowerCase(peek()) <= 'f'))
-                && hNumber.length() < 4) {
-            advancePosition();
-            hNumber.append(currentchar);
-        }
-        return "" + (char) Integer.parseInt(hNumber.toString());
     }
 }

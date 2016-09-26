@@ -33,12 +33,12 @@ public class TclLexer extends AbstractTclLexer {
      * Flag indicating that the lexer is inside curly brackets
      */
     protected boolean curlyflag;
-    
+
     /**
      * Flag indicating that the lexer is inside brackets
      */
     protected boolean brflag;
-    
+
     /**
      * Constructor
      *
@@ -47,7 +47,7 @@ public class TclLexer extends AbstractTclLexer {
     public TclLexer(String script) {
         super(script);
     }
-           
+
     /**
      * Reading alphanumerical names from the script
      *
@@ -60,13 +60,15 @@ public class TclLexer extends AbstractTclLexer {
                 || currentchar == '_') {
             if (currentchar == '\\') {
                 if (peek() == '\n' || peek() == '\r') {
+                    advancePosition();
                     skipEOL();
                 } else {
-                    advancePosition();
+                    name.append(replaceSymbol());
                 }
+            } else {
+                name.append(currentchar);
+                advancePosition();
             }
-            name.append(currentchar);
-            advancePosition();
         }
         return name.toString();
     }
@@ -82,33 +84,24 @@ public class TclLexer extends AbstractTclLexer {
                 && currentchar != ';' && currentchar != '$') {
             if (currentchar == '\\') {
                 if (peek() == '\n' || peek() == '\r') {
+                    advancePosition();
                     skipEOL();
                 } else {
-                    advancePosition();
+                    name.append(replaceSymbol());
                 }
+            } else {
+                name.append(currentchar);
+                advancePosition();
             }
-            name.append(currentchar);
-            advancePosition();
         }
         return name.toString();
     }
 
     /**
-     * Reading end of line symbol with whitespace if present
-     */
-    protected void readEOL() {
-        while (Character.isWhitespace(currentchar)) {
-            advancePosition();
-        }
-    }
-
-    /**
-     * Skipping end of line and whitespace after slash
+     * Skipping end of line and any whitespace after it
      */
     protected void skipEOL() {
-        do {
-            advancePosition();
-        } while (Character.isWhitespace(currentchar));
+        skipWhitespace();
     }
 
     /**
@@ -121,12 +114,13 @@ public class TclLexer extends AbstractTclLexer {
         StringBuilder string = new StringBuilder("");
         while ((currentchar != '"' || !qflag) && (currentchar != '}' || !curlyflag)
                 && (currentchar != ']' || !brflag)) {
-            if ((currentchar == '\\' && peek() == '\n')
-                    || (currentchar == '\\' && peek() == '\r')) {
+            if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
+                advancePosition();
                 skipEOL();
+            } else {
+                string.append(currentchar);
+                advancePosition();
             }
-            string.append(currentchar);
-            advancePosition();
         }
         return string.toString();
     }
@@ -134,15 +128,16 @@ public class TclLexer extends AbstractTclLexer {
     @Override
     public TclToken getToken() {
         /*
-         What is the next token
+         Skipping any leading escaped end of line
          */
-        if ((currentchar == '\\' && peek() == '\n')
-                || (currentchar == '\\' && peek() == '\r')) {
-            /*
-             Skipping escape end of line
-             */
+        if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
+            advancePosition();
             skipEOL();
         }
+
+        /*
+         What is the next token
+         */
         if (currentchar == '{') {
             /*
              Returning a left brace token
@@ -181,7 +176,7 @@ public class TclLexer extends AbstractTclLexer {
             /*
              Returning an end of line token
              */
-            readEOL();
+            skipEOL();
             return new TclToken(TclTokenType.EOL);
         } else if (Character.isWhitespace(currentchar)) {
             /*
@@ -222,7 +217,7 @@ public class TclLexer extends AbstractTclLexer {
              Reading and returning a string of symbols
              */
             return new TclToken(TclTokenType.STRING).setValue(readString());
-        } else if ((currentchar == '_'
+        } else if ((currentchar == '_' || currentchar == '\\'
                 || Character.isDigit(currentchar) || Character.isLetter(currentchar))) {
             /*
              Returning a Tclword token
