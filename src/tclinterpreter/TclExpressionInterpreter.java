@@ -40,42 +40,62 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      * @return
      */
     protected double CalculateNode(TclNode node) {
-        double result;
+        double result = 0;
         /*
-        If the node is number, just get its value
-         */
-        if (node.getChildren().isEmpty()) {
-            if (!node.getValue().isEmpty()) {
-                return Double.parseDouble(node.getValue());
-            } else {
-                return 0;
-            }
-        }
-        result = CalculateNode(node.getChildren().get(0));
-        TclNode node2 = node.getChildren().get(1);
-        /*
-        Operation depends on the node's value
-         */
-        switch (node.getValue()) {
-            case "+":
-                result += CalculateNode(node2);
+        Switching based on the node type
+        */
+        switch (node.type) {
+            /*
+             If the node is number, just get its value
+             */
+            case NUMBER:
+                if (!node.getValue().isEmpty()) {
+                    result = Double.parseDouble(node.getValue());
+                } else {
+                    result = 0;
+                }
                 break;
-            case "-":
-                result -= CalculateNode(node2);
+            /*
+             If the node is an unary operation, apply it to the argument
+             */
+            case UNARYOP:
+                result = CalculateNode(node.getChildren().get(0));
+                switch (node.getValue()) {
+                    case "+":
+                        break;
+                    case "-":
+                        result = -result;
+                        break;
+                    case "!":
+                        result = (result == 0) ? 1 : 0;
+                }
                 break;
-            case "*":
-                result *= CalculateNode(node2);
-                break;
-            case "/":
-                result /= CalculateNode(node2);
-                break;
+            /*
+             If the node is a binary operation, apply it to its two arguments
+             */
+            case BINARYOP:
+                result = CalculateNode(node.getChildren().get(0));
+                TclNode node2 = node.getChildren().get(1);
+                switch (node.getValue()) {
+                    case "+":
+                        result += CalculateNode(node2);
+                        break;
+                    case "-":
+                        result -= CalculateNode(node2);
+                        break;
+                    case "*":
+                        result *= CalculateNode(node2);
+                        break;
+                    case "/":
+                        result /= CalculateNode(node2);
+                }
         }
         return result;
     }
 
     @Override
     public String run() throws AbstractTclParser.TclParserError {
-        String result=Double.toString(CalculateNode(parser.parse()));
+        String result = Double.toString(CalculateNode(parser.parse()));
         return result;
     }
 

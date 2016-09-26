@@ -86,6 +86,18 @@ public class TclExpressionLexer extends AbstractTclLexer {
              */
             advancePosition();
             return new TclToken(TclTokenType.MINUS);
+        } else if (currentchar == '~') {
+            /*
+             Returning a minus op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.BNOT);
+        } else if (currentchar == '!') {
+            /*
+             Returning a minus op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.NOT);
         } else if (currentchar == '*') {
             /*
              Returning a multiplication op token

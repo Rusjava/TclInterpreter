@@ -45,17 +45,37 @@ public class TclExpressionParser extends AbstractTclParser {
      * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
      */
     protected TclNode getFactor() throws TclParserError, UnbalancedParenthesesException {
-        TclNode node;
+        TclNode node = null;
         /*
          * If it begins with a number, return it. If it begins with an opening paranthesis get the expression in paranthesis
          */
-        advanceToken(TclTokenType.NUMBER, TclTokenType.LEFTPAR);
-        if (currenttoken.type == TclTokenType.NUMBER) {
-            node = new TclNode(TclNodeType.NUMBER).setValue(currenttoken.getValue());
-        } else {
-            fnumber++; //Increasing number of folded parantheses
-            node = getExpression();
+        advanceToken(TclTokenType.NUMBER, TclTokenType.LEFTPAR,
+                TclTokenType.NOT, TclTokenType.BNOT, TclTokenType.PLUS, TclTokenType.MINUS);
+        switch (currenttoken.type) {
+            case NUMBER:
+                node = new TclNode(TclNodeType.NUMBER).setValue(currenttoken.getValue());
+                break;
+            case LEFTPAR:
+                fnumber++; //Increasing number of folded parantheses
+                node = getExpression();
+                break;
+            case MINUS:
+                node = new TclNode(TclNodeType.UNARYOP).setValue("-");
+                node.getChildren().add(getFactor());
+                break;
+            case PLUS:
+                node = new TclNode(TclNodeType.UNARYOP).setValue("+");
+                node.getChildren().add(getFactor());
+                break;
+            case NOT:
+                node = new TclNode(TclNodeType.UNARYOP).setValue("!");
+                node.getChildren().add(getFactor());
+                break;
+            case BNOT:
+                node = new TclNode(TclNodeType.UNARYOP).setValue("~");
+                node.getChildren().add(getFactor());
         }
+
         return node;
     }
 
@@ -121,9 +141,7 @@ public class TclExpressionParser extends AbstractTclParser {
             if ((currenttoken.type != TclTokenType.EOF
                     && currenttoken.type != TclTokenType.PLUS
                     && currenttoken.type != TclTokenType.MINUS
-                    && currenttoken.type != TclTokenType.RIGHTPAR)
-                    || error.etokentype == TclTokenType.LEFTPAR
-                    || error.etokentype == TclTokenType.NUMBER) {
+                    && currenttoken.type != TclTokenType.RIGHTPAR)) {
                 throw error;
             }
         }
