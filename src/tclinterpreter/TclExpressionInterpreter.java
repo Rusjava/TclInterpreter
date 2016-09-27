@@ -39,11 +39,11 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      * @param node
      * @return
      */
-    protected double CalculateNode(TclNode node) {
+    protected double CalculateNode(TclNode node) throws TclExecutionException {
         double result = 0;
         /*
         Switching based on the node type
-        */
+         */
         switch (node.type) {
             /*
              If the node is number, just get its value
@@ -68,6 +68,13 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                         break;
                     case "!":
                         result = (result == 0) ? 1 : 0;
+                        break;
+                    case "~":
+                        if (isInteger(result)) {
+                            result = ~(long) result;
+                        } else {
+                            throw new TclExecutionException("Operation ~ is only applicable to integer types", node);
+                        }
                 }
                 break;
             /*
@@ -89,14 +96,26 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                     case "/":
                         result /= CalculateNode(node2);
                 }
+                break;
+            default:
+                throw new TclExecutionException("Unknown node type", node);
         }
         return result;
     }
 
+    /**
+     * Checking if the double number is really a long number
+     *
+     * @param number
+     * @return
+     */
+    protected boolean isInteger(double number) {
+        return ((long) number == number) ? true : false;
+    }
+
     @Override
-    public String run() throws AbstractTclParser.TclParserError {
+    public String run() throws AbstractTclParser.TclParserError, TclExecutionException {
         String result = Double.toString(CalculateNode(parser.parse()));
         return result;
     }
-
 }

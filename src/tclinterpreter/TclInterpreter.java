@@ -48,7 +48,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
     public TclInterpreter(TclParser parser, TclInterpreterContext context, boolean newcontext) {
         super(parser, context, newcontext);
     }
-    
+
     /**
      * A full constructor with output stream
      *
@@ -61,7 +61,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @param encoding an encoding to be used for output encoding
      */
     public TclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, OutputStream out, String encoding) {
-      super(parser, context, newcontext, out, encoding);
+        super(parser, context, newcontext, out, encoding);
     }
 
     /**
@@ -72,7 +72,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Set' command definition
          */
         COMMANDS.put("set", node -> {
-            String varname=readOPNode(node.getChildren().get(0));
+            String varname = readOPNode(node.getChildren().get(0));
             String varvalue = readOPNode(node.getChildren().get(1));
             context.setVaribale(varname, varvalue);
             output.append(" ").append(varname).append("=").append(varvalue).append(";");
@@ -122,6 +122,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 result = inter.run();
             } catch (AbstractTclParser.TclParserError ex) {
                 Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (AbstractTclInterpreter.TclExecutionException ex) {
+                Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
             }
             output.append(" expression=").append(result).append(";");
             return result;
@@ -165,6 +167,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     try {
                         result = subinterpreter.run();
                     } catch (AbstractTclParser.TclParserError ex) {
+                        Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (AbstractTclInterpreter.TclExecutionException ex) {
                         Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                     str.append(result);

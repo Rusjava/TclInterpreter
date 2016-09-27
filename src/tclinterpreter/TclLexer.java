@@ -16,6 +16,9 @@
  */
 package tclinterpreter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A class for TCL lexer
  *
@@ -23,6 +26,17 @@ package tclinterpreter;
  * @version 0.1
  */
 public class TclLexer extends AbstractTclLexer {
+
+    /**
+     * A map for final string characters
+     */
+    protected static final Map<Character, Character> MIRRORMAP = new HashMap<>();
+
+    static {
+        MIRRORMAP.put('"', '"');
+        MIRRORMAP.put('[', ']');
+        MIRRORMAP.put('{', '}');
+    }
 
     /**
      * Flag indicating that the lexer is inside quotation
@@ -108,18 +122,27 @@ public class TclLexer extends AbstractTclLexer {
      * Reading the string between quotes of curly braces with ends of lines
      * skipped
      *
+     * @param endchar the end symbol
      * @return
      */
-    protected String readString() {
+    protected String readString(char endchar) {
         StringBuilder string = new StringBuilder("");
-        while ((currentchar != '"' || !qflag) && (currentchar != '}' || !curlyflag)
-                && (currentchar != ']' || !brflag)) {
+        int counter = 1;
+        while (counter > 0) {
             if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
                 advancePosition();
                 skipEOL();
             } else {
-                string.append(currentchar);
-                advancePosition();
+                if (currentchar == endchar && endchar != MIRRORMAP.get(endchar)) {
+                    counter++;
+                }
+                if (currentchar == MIRRORMAP.get(endchar)) {
+                    counter--;
+                }
+                if (counter != 0) {
+                    string.append(currentchar);
+                    advancePosition();
+                }
             }
         }
         return string.toString();
@@ -216,7 +239,7 @@ public class TclLexer extends AbstractTclLexer {
             /*
              Reading and returning a string of symbols
              */
-            return new TclToken(TclTokenType.STRING).setValue(readString());
+            return new TclToken(TclTokenType.STRING).setValue(readString(retropeek()));
         } else if ((currentchar == '_' || currentchar == '\\'
                 || Character.isDigit(currentchar) || Character.isLetter(currentchar))) {
             /*

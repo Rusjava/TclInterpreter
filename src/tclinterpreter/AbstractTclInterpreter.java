@@ -129,8 +129,9 @@ public abstract class AbstractTclInterpreter {
      *
      * @return
      * @throws tclinterpreter.TclParser.TclParserError
+     * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
-    public abstract String run() throws AbstractTclParser.TclParserError;
+    public abstract String run() throws AbstractTclParser.TclParserError, TclExecutionException;
 
     /**
      * Getting the script output string
@@ -141,4 +142,31 @@ public abstract class AbstractTclInterpreter {
         return output.toString();
     }
 
+    /**
+     * A general class for execution errors thrown by interpreters
+     * 
+     */
+    public static class TclExecutionException extends Exception {
+
+        /**
+         * The node being evaluated
+         */
+        protected TclNode currentnode;
+        
+        /**
+         * A construtor
+         * 
+         * @param msg
+         * @param currentnode the node being evaluated
+         */
+        public TclExecutionException (String msg, TclNode currentnode) {
+            super(msg);
+            this.currentnode=currentnode;
+        }
+        
+        @Override
+        public String toString() {
+            return super.getMessage()+" (at " +currentnode+" )";
+        }
+    }
 }
