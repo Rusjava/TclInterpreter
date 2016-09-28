@@ -98,12 +98,45 @@ public class TclExpressionLexer extends AbstractTclLexer {
              */
             advancePosition();
             return new TclToken(TclTokenType.NOT);
+        } else if (currentchar == '*' && peek() == '*') {
+            /*
+             Returning an exp op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.EXP);
         } else if (currentchar == '*') {
             /*
              Returning a multiplication op token
              */
             advancePosition();
             return new TclToken(TclTokenType.MUL);
+        } else if (currentchar == '<' && peek() == '<') {
+            /*
+             Returning a left op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.LSHIFT);
+        } else if (currentchar == '<') {
+            /*
+             Returning a less op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.LESS);
+        } else if (currentchar == '>' && peek() == '>') {
+            /*
+             Returning a righr shift op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.RSHIFT);
+        } else if (currentchar == '>') {
+            /*
+             Returning a more op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.MORE);
         } else if (currentchar == '/') {
             /*
              Returning a division op token

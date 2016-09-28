@@ -16,12 +16,30 @@
  */
 package tclinterpreter;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  *
  * @author Ruslan Feshchenko
  * @version 0.1
  */
 public class TclExpressionParser extends AbstractTclParser {
+
+    /**
+     * List of sets of operations by priority
+     */
+    protected List<Set<TclTokenType>> opLevelList;
+
+    {
+        opLevelList = new ArrayList<>();
+        Set set = new HashSet<>();
+        set.add(TclTokenType.MUL);
+        set.add(TclTokenType.DIV);
+        opLevelList.add(set);
+    }
 
     /**
      * The number of folded parentheses
@@ -38,7 +56,7 @@ public class TclExpressionParser extends AbstractTclParser {
     }
 
     /**
-     * Returning a factor of a binary operation
+     * Returning an argument of an exponetial operation
      *
      * @return
      * @throws tclinterpreter.AbstractTclParser.TclParserError
@@ -54,10 +72,12 @@ public class TclExpressionParser extends AbstractTclParser {
         switch (currenttoken.type) {
             case NUMBER:
                 node = new TclNode(TclNodeType.NUMBER).setValue(currenttoken.getValue());
+                checkRightParenthesis();
                 break;
             case LEFTPAR:
                 fnumber++; //Increasing number of folded parantheses
                 node = getExpression();
+                checkRightParenthesis();
                 break;
             case MINUS:
                 node = new TclNode(TclNodeType.UNARYOP).setValue("-");
@@ -75,8 +95,85 @@ public class TclExpressionParser extends AbstractTclParser {
                 node = new TclNode(TclNodeType.UNARYOP).setValue("~");
                 node.getChildren().add(getFactor());
         }
-
         return node;
+    }
+
+    /**
+     * Checking that a factor is followed by a delimeter and closing parentheses
+     *
+     * @throws TclParserError
+     */
+    protected void checkRightParenthesis() throws TclParserError {
+        try {
+            advanceToken(TclTokenType.RIGHTPAR);
+        } catch (TclParserError error) {
+            if ((currenttoken.type != TclTokenType.EOF
+                    && currenttoken.type != TclTokenType.EXP
+                    && currenttoken.type != TclTokenType.PLUS
+                    && currenttoken.type != TclTokenType.MUL
+                    && currenttoken.type != TclTokenType.DIV
+                    && currenttoken.type != TclTokenType.MINUS
+                    && currenttoken.type != TclTokenType.RIGHTPAR)) {
+                throw error;
+            }
+        }
+        if (currenttoken.type == TclTokenType.RIGHTPAR) {
+            fnumber--;
+            if (fnumber < 0) {
+                throw new UnbalancedParenthesesException("The number of closing parentheses exceeds the number of opening parentheses");
+            }
+        }
+    }
+
+    /**
+     * Returning a factor of a multiplicative operation
+     *
+     * @return
+     * @throws TclParserError
+     */
+    protected TclNode getFactor2() throws TclParserError {
+        TclNode fact;
+        TclNode op;
+        /*
+         Is the first token a factor?
+         */
+        fact = getFactor();
+        if (currenttoken.type == TclTokenType.EXP) {
+            op = getBinaryOperation();
+            op.getChildren().add(fact);
+            fact = getFactor();
+            op.getChildren().add(fact);
+            fact = op;
+        }
+
+        return fact;
+    }
+
+    /**
+     * Returning an argument of a binary operation
+     *
+     * @return
+     * @throws tclinterpreter.AbstractTclParser.TclParserError
+     * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
+     */
+    protected TclNode getArgument() throws TclParserError, UnbalancedParenthesesException {
+        TclNode fact;
+        TclNode op;
+        /*
+         Is the first token a factor?
+         */
+        fact = getFactor2();
+        /*
+         Cycling over the long expression
+         */
+        while (currenttoken.type == TclTokenType.MUL || currenttoken.type == TclTokenType.DIV) {
+            op = getBinaryOperation();
+            op.getChildren().add(fact);
+            fact = getFactor2();
+            op.getChildren().add(fact);
+            fact = op;
+        }
+        return fact;
     }
 
     /**
@@ -96,8 +193,8 @@ public class TclExpressionParser extends AbstractTclParser {
         /*
          Cycling over the long expression
          */
-        while (currenttoken.type != TclTokenType.EOF && currenttoken.type != TclTokenType.RIGHTPAR) {
-            op = getAddOperation();
+        while (currenttoken.type == TclTokenType.PLUS || currenttoken.type == TclTokenType.MINUS) {
+            op = getBinaryOperation();
             op.getChildren().add(arg);
             arg = getArgument();
             op.getChildren().add(arg);
@@ -107,54 +204,11 @@ public class TclExpressionParser extends AbstractTclParser {
     }
 
     /**
-     * Returning an argument of a binary operation
+     * Returning a binary operation node
      *
      * @return
-     * @throws tclinterpreter.AbstractTclParser.TclParserError
-     * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
      */
-    protected TclNode getArgument() throws TclParserError, UnbalancedParenthesesException {
-        TclNode fact;
-        TclNode op;
-        /*
-         Is the first token a factor?
-         */
-        fact = getFactor();
-        /*
-         Cycling over the long expression
-         */
-        try {
-            do {
-                op = getProdOperation();
-                op.getChildren().add(fact);
-                fact = getFactor();
-                op.getChildren().add(fact);
-                fact = op;
-            } while (true);
-        } catch (TclParserError error) {
-            if (currenttoken.type == TclTokenType.RIGHTPAR) {
-                fnumber--;
-                if (fnumber < 0) {
-                    throw new UnbalancedParenthesesException("The number of closing parentheses exceeds the number of opening parentheses");
-                }
-            }
-            if ((currenttoken.type != TclTokenType.EOF
-                    && currenttoken.type != TclTokenType.PLUS
-                    && currenttoken.type != TclTokenType.MINUS
-                    && currenttoken.type != TclTokenType.RIGHTPAR)) {
-                throw error;
-            }
-        }
-        return fact;
-    }
-
-    /**
-     * Returning a binary additive operation node
-     *
-     * @return
-     * @throws tclinterpreter.AbstractTclParser.TclParserError
-     */
-    protected TclNode getAddOperation() throws TclParserError {
+    protected TclNode getBinaryOperation() {
         TclNode node = new TclNode(TclNodeType.BINARYOP);
         switch (currenttoken.type) {
             case PLUS:
@@ -163,26 +217,14 @@ public class TclExpressionParser extends AbstractTclParser {
             case MINUS:
                 node.setValue("-");
                 break;
-        }
-        return node;
-    }
-
-    /**
-     * Returning a binary product operation node
-     *
-     * @return
-     * @throws tclinterpreter.AbstractTclParser.TclParserError
-     */
-    protected TclNode getProdOperation() throws TclParserError {
-        TclNode node = new TclNode(TclNodeType.BINARYOP);
-        advanceToken(TclTokenType.MUL, TclTokenType.DIV);
-        switch (currenttoken.type) {
             case MUL:
                 node.setValue("*");
                 break;
             case DIV:
                 node.setValue("/");
                 break;
+            case EXP:
+                node.setValue("^");
         }
         return node;
     }

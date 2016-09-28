@@ -95,6 +95,9 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                         break;
                     case "/":
                         result /= CalculateNode(node2);
+                        break;
+                    case "^":
+                        result=Math.pow(result, CalculateNode(node2));
                 }
                 break;
             default:
