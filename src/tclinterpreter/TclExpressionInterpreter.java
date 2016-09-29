@@ -38,11 +38,12 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      *
      * @param node
      * @return
+     * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected double CalculateNode(TclNode node) throws TclExecutionException {
         double result = 0;
         /*
-        Switching based on the node type
+         Switching based on the node type
          */
         switch (node.type) {
             /*
@@ -83,21 +84,37 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
             case BINARYOP:
                 result = CalculateNode(node.getChildren().get(0));
                 TclNode node2 = node.getChildren().get(1);
+                double n2 = CalculateNode(node2);
                 switch (node.getValue()) {
                     case "+":
-                        result += CalculateNode(node2);
+                        result += n2;
                         break;
                     case "-":
-                        result -= CalculateNode(node2);
+                        result -= n2;
                         break;
                     case "*":
-                        result *= CalculateNode(node2);
+                        result *= n2;
                         break;
                     case "/":
-                        result /= CalculateNode(node2);
+                        result /= n2;
                         break;
-                    case "^":
-                        result=Math.pow(result, CalculateNode(node2));
+                    case "**":
+                        result = Math.pow(result, n2);
+                        break;
+                    case "<<":
+                        if (isInteger(result) && isInteger(n2)) {
+                            result = (long) result << (int) n2;
+                        } else {
+                            throw new TclExecutionException("Operation << is only applicable to integer types", node);
+                        }
+                        break;
+                    case ">>":
+                        if (isInteger(result) && isInteger(n2)) {
+                            result = (long) result >> (int) n2;
+                        } else {
+                            throw new TclExecutionException("Operation >> is only applicable to integer types", node);
+                        }
+
                 }
                 break;
             default:

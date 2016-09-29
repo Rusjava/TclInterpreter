@@ -17,9 +17,10 @@
 package tclinterpreter;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -31,14 +32,20 @@ public class TclExpressionParser extends AbstractTclParser {
     /**
      * List of sets of operations by priority
      */
-    protected List<Set<TclTokenType>> opLevelList;
+    protected static final List<Set<TclTokenType>> opLevelList;
 
-    {
+    static {
         opLevelList = new ArrayList<>();
-        Set set = new HashSet<>();
-        set.add(TclTokenType.MUL);
-        set.add(TclTokenType.DIV);
-        opLevelList.add(set);
+        opLevelList.add(Stream.of(TclTokenType.MUL, TclTokenType.DIV, TclTokenType.REM).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.PLUS, TclTokenType.MINUS).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.LSHIFT, TclTokenType.RSHIFT).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.LESS, TclTokenType.MORE, TclTokenType.LEQ, TclTokenType.MEQ).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.IN, TclTokenType.NI, TclTokenType.NE, TclTokenType.EQ).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.BAND).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.BXOR).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.BOR).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.AND).collect(Collectors.toSet()));
+        opLevelList.add(Stream.of(TclTokenType.OR).collect(Collectors.toSet()));
     }
 
     /**
@@ -76,7 +83,7 @@ public class TclExpressionParser extends AbstractTclParser {
                 break;
             case LEFTPAR:
                 fnumber++; //Increasing number of folded parantheses
-                node = getExpression();
+                node = getExpressionLevel(opLevelList.size() - 1);
                 checkRightParenthesis();
                 break;
             case MINUS:
@@ -113,6 +120,8 @@ public class TclExpressionParser extends AbstractTclParser {
                     && currenttoken.type != TclTokenType.MUL
                     && currenttoken.type != TclTokenType.DIV
                     && currenttoken.type != TclTokenType.MINUS
+                    && currenttoken.type != TclTokenType.LSHIFT
+                    && currenttoken.type != TclTokenType.RSHIFT
                     && currenttoken.type != TclTokenType.RIGHTPAR)) {
                 throw error;
             }
@@ -150,53 +159,32 @@ public class TclExpressionParser extends AbstractTclParser {
     }
 
     /**
-     * Returning an argument of a binary operation
+     * Returning the expression with operations of the next priority level
      *
+     * @param level array with current expression level
      * @return
      * @throws tclinterpreter.AbstractTclParser.TclParserError
      * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
      */
-    protected TclNode getArgument() throws TclParserError, UnbalancedParenthesesException {
-        TclNode fact;
-        TclNode op;
-        /*
-         Is the first token a factor?
-         */
-        fact = getFactor2();
-        /*
-         Cycling over the long expression
-         */
-        while (currenttoken.type == TclTokenType.MUL || currenttoken.type == TclTokenType.DIV) {
-            op = getBinaryOperation();
-            op.getChildren().add(fact);
-            fact = getFactor2();
-            op.getChildren().add(fact);
-            fact = op;
+    protected TclNode getExpressionLevel(int level) throws TclParserError, UnbalancedParenthesesException {
+        //If the last level, go to the exponent
+        if (level == -1) {
+            return getFactor2();
         }
-        return fact;
-    }
-
-    /**
-     * Returning the expression in parentheses
-     *
-     * @return
-     * @throws tclinterpreter.AbstractTclParser.TclParserError
-     * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
-     */
-    protected TclNode getExpression() throws TclParserError, UnbalancedParenthesesException {
+        //Temporal node variables
         TclNode arg;
         TclNode op;
         /*
          Is the first token an argument?
          */
-        arg = getArgument();
+        arg = getExpressionLevel(level - 1);
         /*
          Cycling over the long expression
          */
-        while (currenttoken.type == TclTokenType.PLUS || currenttoken.type == TclTokenType.MINUS) {
+        while (opLevelList.get(level).contains(currenttoken.type)) {
             op = getBinaryOperation();
             op.getChildren().add(arg);
-            arg = getArgument();
+            arg = getExpressionLevel(level - 1);
             op.getChildren().add(arg);
             arg = op;
         }
@@ -224,7 +212,13 @@ public class TclExpressionParser extends AbstractTclParser {
                 node.setValue("/");
                 break;
             case EXP:
-                node.setValue("^");
+                node.setValue("**"); 
+                break;
+            case LSHIFT:
+                node.setValue("<<");
+                break;
+            case RSHIFT:
+                node.setValue(">>");
         }
         return node;
     }
@@ -236,7 +230,7 @@ public class TclExpressionParser extends AbstractTclParser {
          */
         TclNode result;
         try {
-            result = getExpression();
+            result = getExpressionLevel(opLevelList.size() - 1);
         } catch (TclParserError error) {
             if (error.ctokentype == TclTokenType.EOF) {
                 return new TclNode(TclNodeType.QSTRING).setValue("0");
