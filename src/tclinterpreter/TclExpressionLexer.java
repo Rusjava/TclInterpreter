@@ -113,12 +113,20 @@ public class TclExpressionLexer extends AbstractTclLexer {
             return new TclToken(TclTokenType.MUL);
         } else if (currentchar == '<' && peek() == '<') {
             /*
-             Returning a left op token
+             Returning a left shift op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.LSHIFT);
-        } else if (currentchar == '<') {
+        } else if (currentchar == '<' && peek() == '=') {
+            /*
+             Returning a less or equal op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.LEQ);
+        }
+        else if (currentchar == '<') {
             /*
              Returning a less op token
              */
@@ -131,6 +139,13 @@ public class TclExpressionLexer extends AbstractTclLexer {
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.RSHIFT);
+        } else if (currentchar == '>' && peek() == '=') {
+            /*
+             Returning a more or equal op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.MEQ);
         } else if (currentchar == '>') {
             /*
              Returning a more op token
@@ -143,6 +158,70 @@ public class TclExpressionLexer extends AbstractTclLexer {
              */
             advancePosition();
             return new TclToken(TclTokenType.DIV);
+        } else if (currentchar == '%') {
+            /*
+             Returning a remainder op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.REM);
+        } else if (currentchar == 'e' && peek() == 'q') {
+            /*
+             Returning a string equality op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.EQ);
+        } else if (currentchar == 'n' && peek() == 'e') {
+            /*
+             Returning a string non-equality op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.NE);
+        } else if (currentchar == 'i' && peek() == 'n') {
+            /*
+             Returning a string in list op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.IN);
+        } else if (currentchar == 'n' && peek() == 'i') {
+            /*
+             Returning a string not in list op token
+             */
+            advancePosition();
+            advancePosition();
+            return new TclToken(TclTokenType.NI);
+        } else if (currentchar == '&' && peek() == '&') {
+            /*
+             Returning an AND op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.AND);
+        } else if (currentchar == '|' && peek() == '|') {
+            /*
+             Returning an OR op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.OR);
+        } else if (currentchar == '&') {
+            /*
+             Returning a bit AND op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.BAND);
+        } else if (currentchar == '^') {
+            /*
+             Returning a bit XOR op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.BXOR);
+        } else if (currentchar == '|') {
+            /*
+             Returning a bit OR op token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.BOR);
         } else if (currentchar == '(') {
             /*
              Returning a left paranthesis op token

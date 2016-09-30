@@ -17,6 +17,7 @@
 package tclinterpreter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,20 +33,30 @@ public class TclExpressionParser extends AbstractTclParser {
     /**
      * List of sets of operations by priority
      */
-    protected static final List<Set<TclTokenType>> opLevelList;
+    protected static final List<Set<TclTokenType>> OPLEVELLIST;
+
+    /**
+     * A set of all binary operation types
+     */
+    protected static final Set<TclTokenType> OPSET;
 
     static {
-        opLevelList = new ArrayList<>();
-        opLevelList.add(Stream.of(TclTokenType.MUL, TclTokenType.DIV, TclTokenType.REM).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.PLUS, TclTokenType.MINUS).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.LSHIFT, TclTokenType.RSHIFT).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.LESS, TclTokenType.MORE, TclTokenType.LEQ, TclTokenType.MEQ).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.IN, TclTokenType.NI, TclTokenType.NE, TclTokenType.EQ).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.BAND).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.BXOR).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.BOR).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.AND).collect(Collectors.toSet()));
-        opLevelList.add(Stream.of(TclTokenType.OR).collect(Collectors.toSet()));
+        OPLEVELLIST = new ArrayList<>();
+        OPLEVELLIST.add(Stream.of(TclTokenType.MUL, TclTokenType.DIV, TclTokenType.REM).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.PLUS, TclTokenType.MINUS).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.LSHIFT, TclTokenType.RSHIFT).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.LESS, TclTokenType.MORE, TclTokenType.LEQ, TclTokenType.MEQ).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.IN, TclTokenType.NI, TclTokenType.NE, TclTokenType.EQ).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.BAND).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.BXOR).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.BOR).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.AND).collect(Collectors.toSet()));
+        OPLEVELLIST.add(Stream.of(TclTokenType.OR).collect(Collectors.toSet()));
+
+        OPSET = new HashSet<>();
+        OPLEVELLIST.stream().forEach(set -> {
+            OPSET.addAll(set);
+        });
     }
 
     /**
@@ -83,7 +94,7 @@ public class TclExpressionParser extends AbstractTclParser {
                 break;
             case LEFTPAR:
                 fnumber++; //Increasing number of folded parantheses
-                node = getExpressionLevel(opLevelList.size() - 1);
+                node = getExpressionLevel(OPLEVELLIST.size() - 1);
                 checkRightParenthesis();
                 break;
             case MINUS:
@@ -116,12 +127,7 @@ public class TclExpressionParser extends AbstractTclParser {
         } catch (TclParserError error) {
             if ((currenttoken.type != TclTokenType.EOF
                     && currenttoken.type != TclTokenType.EXP
-                    && currenttoken.type != TclTokenType.PLUS
-                    && currenttoken.type != TclTokenType.MUL
-                    && currenttoken.type != TclTokenType.DIV
-                    && currenttoken.type != TclTokenType.MINUS
-                    && currenttoken.type != TclTokenType.LSHIFT
-                    && currenttoken.type != TclTokenType.RSHIFT
+                    && !OPSET.contains(currenttoken.type)
                     && currenttoken.type != TclTokenType.RIGHTPAR)) {
                 throw error;
             }
@@ -181,7 +187,7 @@ public class TclExpressionParser extends AbstractTclParser {
         /*
          Cycling over the long expression
          */
-        while (opLevelList.get(level).contains(currenttoken.type)) {
+        while (OPLEVELLIST.get(level).contains(currenttoken.type)) {
             op = getBinaryOperation();
             op.getChildren().add(arg);
             arg = getExpressionLevel(level - 1);
@@ -212,13 +218,20 @@ public class TclExpressionParser extends AbstractTclParser {
                 node.setValue("/");
                 break;
             case EXP:
-                node.setValue("**"); 
+                node.setValue("**");
                 break;
             case LSHIFT:
                 node.setValue("<<");
                 break;
             case RSHIFT:
                 node.setValue(">>");
+                break;
+            case LEQ:
+                node.setValue("<=");
+                break;
+            case MEQ:
+                node.setValue(">=");
+                break;
         }
         return node;
     }
@@ -230,7 +243,7 @@ public class TclExpressionParser extends AbstractTclParser {
          */
         TclNode result;
         try {
-            result = getExpressionLevel(opLevelList.size() - 1);
+            result = getExpressionLevel(OPLEVELLIST.size() - 1);
         } catch (TclParserError error) {
             if (error.ctokentype == TclTokenType.EOF) {
                 return new TclNode(TclNodeType.QSTRING).setValue("0");
