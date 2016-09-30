@@ -232,6 +232,39 @@ public class TclExpressionParser extends AbstractTclParser {
             case MEQ:
                 node.setValue(">=");
                 break;
+            case LESS:
+                node.setValue("<");
+                break;
+            case MORE:
+                node.setValue(">");
+                break;
+            case EQ:
+                node.setValue("eq");
+                break;
+            case NE:
+                node.setValue("ne");
+                break;
+            case IN:
+                node.setValue("in");
+                break;
+            case NI:
+                node.setValue("ni");
+                break;
+            case BAND:
+                node.setValue("&");
+                break;
+            case BXOR:
+                node.setValue("^");
+                break;
+            case BOR:
+                node.setValue("|");
+                break;
+            case AND:
+                node.setValue("&&");
+                break;
+            case OR:
+                node.setValue("||");
+                break;
         }
         return node;
     }

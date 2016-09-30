@@ -40,39 +40,58 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      * @return
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
-    protected double CalculateNode(TclNode node) throws TclExecutionException {
-        double result = 0;
+    protected OpResult CalculateNode(TclNode node) throws TclExecutionException {
+        OpResult n1;
         /*
          Switching based on the node type
          */
         switch (node.type) {
             /*
-             If the node is number, just get its value
+             If the node is number, just get its value if it is parsable
              */
             case NUMBER:
                 if (!node.getValue().isEmpty()) {
-                    result = Double.parseDouble(node.getValue());
+                    try {
+                        return new OpResult(Long.parseLong(node.getValue()));
+                    } catch (NumberFormatException ex) {
+                    }
+                    try {
+                        return new OpResult(Double.parseDouble(node.getValue()));
+                    } catch (NumberFormatException ex) {
+                        return new OpResult(node.getValue());
+                    }
                 } else {
-                    result = 0;
+                    return new OpResult(0l);
                 }
-                break;
             /*
              If the node is an unary operation, apply it to the argument
              */
             case UNARYOP:
-                result = CalculateNode(node.getChildren().get(0));
+                n1 = CalculateNode(node.getChildren().get(0));
                 switch (node.getValue()) {
                     case "+":
-                        break;
+                        if (n1.isDouble()) {
+                            return n1;
+                        } else {
+                            throw new TclExecutionException("Operation + is only applicable to numeric types", node);
+                        }
                     case "-":
-                        result = -result;
-                        break;
+                        if (n1.isLong()) {
+                            return new OpResult(-n1.getLong());
+                        } else if (n1.isDouble()) {
+                            return new OpResult(-n1.getDouble());
+                        } else {
+                            throw new TclExecutionException("Operation - is only applicable to numeric types", node);
+                        }
                     case "!":
-                        result = (result == 0) ? 1 : 0;
-                        break;
+                        if (n1.isDouble()) {
+                            return new OpResult(new Long((n1.getDouble() == 0) ? 1 : 0));
+                        } else {
+                            throw new TclExecutionException("Operation ! is only applicable to numeric types", node);
+                        }
                     case "~":
-                        if (isInteger(result)) {
-                            result = ~(long) result;
+                        if (n1.isLong()) {
+                            return new OpResult(~n1.getLong());
                         } else {
                             throw new TclExecutionException("Operation ~ is only applicable to integer types", node);
                         }
@@ -82,60 +101,169 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
              If the node is a binary operation, apply it to its two arguments
              */
             case BINARYOP:
-                result = CalculateNode(node.getChildren().get(0));
-                TclNode node2 = node.getChildren().get(1);
-                double n2 = CalculateNode(node2);
+                n1 = CalculateNode(node.getChildren().get(0));
+                OpResult n2 = CalculateNode(node.getChildren().get(1));
                 switch (node.getValue()) {
                     case "+":
-                        result += n2;
-                        break;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() + n2.getLong());
+                        } else if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() + n2.getDouble());
+                        } else {
+                            return new OpResult(n1.toString() + n2.toString());
+                        }
                     case "-":
-                        result -= n2;
-                        break;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() - n2.getLong());
+                        } else if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() - n2.getDouble());
+                        } else {
+                            throw new TclExecutionException("Operation - is only applicable to numeric types", node);
+                        }
                     case "*":
-                        result *= n2;
-                        break;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() * n2.getLong());
+                        } else if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() * n2.getDouble());
+                        } else {
+                            throw new TclExecutionException("Operation * is only applicable to numeric types", node);
+                        }
                     case "/":
-                        result /= n2;
-                        break;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() / n2.getLong());
+                        } else if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() / n2.getDouble());
+                        } else {
+                            throw new TclExecutionException("Operation / is only applicable to numeric types", node);
+                        }
                     case "**":
-                        result = Math.pow(result, n2);
-                        break;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(Math.pow(n1.getLong(), n2.getLong()));
+                        } else if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(Math.pow(n1.getDouble(), n2.getDouble()));
+                        } else {
+                            throw new TclExecutionException("Operation ** is only applicable to numeric types", node);
+                        }
                     case "<<":
-                        if (isInteger(result) && isInteger(n2)) {
-                            result = (long) result << (int) n2;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() << n2.getLong());
                         } else {
                             throw new TclExecutionException("Operation << is only applicable to integer types", node);
                         }
-                        break;
                     case ">>":
-                        if (isInteger(result) && isInteger(n2)) {
-                            result = (long) result >> (int) n2;
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() >> n2.getLong());
                         } else {
                             throw new TclExecutionException("Operation >> is only applicable to integer types", node);
                         }
-
                 }
-                break;
             default:
                 throw new TclExecutionException("Unknown node type", node);
         }
-        return result;
-    }
-
-    /**
-     * Checking if the double number is really a long number
-     *
-     * @param number
-     * @return
-     */
-    protected boolean isInteger(double number) {
-        return ((long) number == number) ? true : false;
+        return n1;
     }
 
     @Override
     public String run() throws AbstractTclParser.TclParserError, TclExecutionException {
-        String result = Double.toString(CalculateNode(parser.parse()));
+        String result = CalculateNode(parser.parse()).toString();
         return result;
+    }
+
+    /**
+     * An inner class for operation results
+     */
+    protected class OpResult {
+
+        private final Long intvalue;
+        private final Double doublevalue;
+        private final String svalue;
+
+        /**
+         * Constructor for double numbers
+         *
+         * @param value
+         */
+        public OpResult(Double value) {
+            this.doublevalue = value;
+            this.intvalue = null;
+            this.svalue = value.toString();
+        }
+
+        /**
+         * Constructor for long numbers
+         *
+         * @param value
+         */
+        public OpResult(Long value) {
+            this.doublevalue = value.doubleValue();
+            this.intvalue = value;
+            this.svalue = value.toString();
+        }
+
+        /**
+         * Constructor for strings
+         *
+         * @param value
+         */
+        public OpResult(String value) {
+            this.doublevalue = null;
+            this.intvalue = null;
+            this.svalue = value;
+        }
+
+        /**
+         * Returnning true if of Double type
+         *
+         * @return
+         */
+        public boolean isDouble() {
+            return (doublevalue != null) ? true : false;
+        }
+
+        /**
+         * Returnning true if of Long type
+         *
+         * @return
+         */
+        public boolean isLong() {
+            return (intvalue != null) ? true : false;
+        }
+
+        /**
+         * Returnning true if of String type
+         *
+         * @return
+         */
+        public boolean isString() {
+            return (doublevalue == null && intvalue == null) ? true : false;
+        }
+
+        /**
+         * Returnning double value if of Double value
+         *
+         * @return
+         */
+        public double getDouble() {
+            return doublevalue;
+        }
+
+        /**
+         * Returnning long value if of Long value
+         *
+         * @return
+         */
+        public long getLong() {
+            return intvalue;
+        }
+
+        /**
+         * Returnning String value
+         *
+         * @return
+         */
+        @Override
+        public String toString() {
+            return svalue;
+        }
     }
 }
