@@ -197,11 +197,13 @@ public class TclExpressionLexer extends AbstractTclLexer {
              Returning an AND op token
              */
             advancePosition();
+            advancePosition();
             return new TclToken(TclTokenType.AND);
         } else if (currentchar == '|' && peek() == '|') {
             /*
              Returning an OR op token
              */
+            advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.OR);
         } else if (currentchar == '&') {

@@ -156,6 +156,72 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                         } else {
                             throw new TclExecutionException("Operation >> is only applicable to integer types", node);
                         }
+                    case ">":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((long) (n1.getDouble() > n2.getDouble() ? 1 : 0));
+                        } else {
+                            throw new TclExecutionException("Operation > is only applicable to numeric types", node);
+                        }
+                    case "<":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((long) (n1.getDouble() < n2.getDouble() ? 1 : 0));
+                        } else {
+                            throw new TclExecutionException("Operation < is only applicable to numeric types", node);
+                        }
+                    case ">=":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((long) (n1.getDouble() >= n2.getDouble() ? 1 : 0));
+                        } else {
+                            throw new TclExecutionException("Operation >= is only applicable to numeric types", node);
+                        }
+                    case "<=":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((long) (n1.getDouble() <= n2.getDouble() ? 1 : 0));
+                        } else {
+                            throw new TclExecutionException("Operation <= is only applicable to numeric types", node);
+                        }
+                    case "eq":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() == n2.getDouble() ? 1l : 0l);
+                        } else {
+                            return new OpResult(n1.toString().equals(n2.toString()) ? 1l : 0l);
+                        }
+                    case "ne":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult(n1.getDouble() != n2.getDouble() ? 1l : 0l);
+                        } else {
+                            return new OpResult(!n1.toString().equals(n2.toString()) ? 1l : 0l);
+                        }
+                    case "&":
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() & n2.getLong());
+                        } else {
+                            throw new TclExecutionException("Operation & is only applicable to integer types", node);
+                        }
+                    case "^":
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() ^ n2.getLong());
+                        } else {
+                            throw new TclExecutionException("Operation ^ is only applicable to integer types", node);
+                        }
+                    case "|":
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() | n2.getLong());
+                        } else {
+                            throw new TclExecutionException("Operation | is only applicable to integer types", node);
+                        }
+                    case "&&":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((n1.getDouble() != 0 && n2.getDouble() != 0) ? 1l : 0l);
+                        } else {
+                            throw new TclExecutionException("Operation && is only applicable to numeric types", node);
+                        }
+                    case "||":
+                        if (n1.isDouble() && n2.isDouble()) {
+                            return new OpResult((n1.getDouble() != 0 || n2.getDouble() != 0) ? 1l : 0l);
+                        } else {
+                            throw new TclExecutionException("Operation || is only applicable to numeric types", node);
+                        }
                 }
             default:
                 throw new TclExecutionException("Unknown node type", node);

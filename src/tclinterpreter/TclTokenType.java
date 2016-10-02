@@ -32,7 +32,7 @@ public enum TclTokenType {
     EXP("exp"),
     REM("remainder"),
     BOR("bitor"),
-    BAND("bitend"),
+    BAND("bitand"),
     OR("or"),
     AND("and"),
     BXOR("xor"),
