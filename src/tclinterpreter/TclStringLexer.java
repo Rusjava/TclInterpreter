@@ -40,9 +40,9 @@ public class TclStringLexer extends AbstractTclLexer {
      */
     protected String readName() {
         StringBuilder name = new StringBuilder("");
-        while (Character.isDigit(currentchar)
+        while ((Character.isDigit(currentchar)
                 || Character.isLetter(currentchar)
-                || currentchar == '_') {
+                || currentchar == '_') && currentchar != 0) {
             if (currentchar == '\\') {
                 name.append(replaceSymbol());
             } else {
@@ -60,7 +60,7 @@ public class TclStringLexer extends AbstractTclLexer {
      */
     protected String readSubString() {
         StringBuilder string = new StringBuilder();
-        while (currentchar != '[' && currentchar != 0 && currentchar != '$') {
+        while (currentchar != '[' && currentchar != 0 && currentchar != '$' && currentchar != 0) {
             if (currentchar == '\\') {
                 string.append(replaceSymbol());
             } else {
@@ -109,12 +109,12 @@ public class TclStringLexer extends AbstractTclLexer {
             advancePosition();
             return new TclToken(TclTokenType.DOLLAR);
         } else if ((currentchar == '_' || Character.isLetter(currentchar))
-                && retropeek() == '$') {
+                && peekback() == '$') {
             /*
              Returning a name token
              */
             return new TclToken(TclTokenType.NAME).setValue(readName());
-        } else if (retropeek() == '[') {
+        } else if (peekback() == '[') {
             /*
              Reading and returning a string representing a script
              */

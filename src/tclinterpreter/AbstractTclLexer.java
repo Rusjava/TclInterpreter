@@ -80,7 +80,7 @@ public abstract class AbstractTclLexer {
      *
      * @return the previous character
      */
-    protected char retropeek() {
+    protected char peekback() {
         if (pos > 0) {
             return script.charAt(pos - 1);
         } else {

@@ -47,7 +47,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
          */
         switch (node.type) {
             /*
-             If the node is number, just get its value if it is parsable
+             If the node is a number, just get its value if it is parsable
              */
             case NUMBER:
                 if (!node.getValue().isEmpty()) {
@@ -63,6 +63,12 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                 } else {
                     return new OpResult(0l);
                 }
+                
+            /*
+             If the node is a string, just get its value
+             */
+            case QSTRING:
+                return new OpResult(node.getValue());
             /*
              If the node is an unary operation, apply it to the argument
              */

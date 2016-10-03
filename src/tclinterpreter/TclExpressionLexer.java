@@ -24,6 +24,8 @@ package tclinterpreter;
  */
 public class TclExpressionLexer extends AbstractTclLexer {
 
+    protected boolean qflag = false;
+
     /**
      * Constructor
      *
@@ -66,12 +68,26 @@ public class TclExpressionLexer extends AbstractTclLexer {
                 && ((peek() == '-') || peek() == '+'))) {
             number.append(currentchar);
             advancePosition();
-            if (Character.toLowerCase(retropeek()) == 'e') {
+            if (Character.toLowerCase(peekback()) == 'e') {
                 number.append(currentchar);
                 advancePosition();
             }
         }
         return number.toString();
+    }
+
+    /**
+     * Reading a string of characters in quotes
+     *
+     * @return
+     */
+    protected String readString() {
+        StringBuilder string = new StringBuilder("");
+        while (currentchar != '"' && currentchar != 0) {
+            string.append(currentchar);
+            advancePosition();
+        }
+        return string.toString();
     }
 
     @Override
@@ -86,7 +102,12 @@ public class TclExpressionLexer extends AbstractTclLexer {
             skipWhitespace();
         }
 
-        if (Character.isDigit(currentchar)) {
+        if (peekback() == '"' && qflag) {
+            /*
+             Reading and returning a string of symbols
+             */
+            return new TclToken(TclTokenType.STRING).setValue(readString());
+        } else if (Character.isDigit(currentchar)) {
             /*
              Returning a real number token
              */
@@ -264,6 +285,20 @@ public class TclExpressionLexer extends AbstractTclLexer {
              */
             advancePosition();
             return new TclToken(TclTokenType.RIGHTPAR);
+        } else if (currentchar == '"' && !qflag) {
+            /*
+             Returning a left quote token
+             */
+            qflag = true;
+            advancePosition();
+            return new TclToken(TclTokenType.LEFTQ);
+        } else if (currentchar == '"' && qflag) {
+            /*
+             Returning a right quote token
+             */
+            qflag = false;
+            advancePosition();
+            return new TclToken(TclTokenType.RIGHTQ);
         } else if (currentchar == 0) {
             /*
              Reading and returning end of file

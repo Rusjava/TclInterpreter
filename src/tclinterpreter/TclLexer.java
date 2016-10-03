@@ -69,9 +69,9 @@ public class TclLexer extends AbstractTclLexer {
      */
     protected String readName() {
         StringBuilder name = new StringBuilder("");
-        while (Character.isDigit(currentchar)
+        while ((Character.isDigit(currentchar)
                 || Character.isLetter(currentchar)
-                || currentchar == '_') {
+                || currentchar == '_') && currentchar != 0) {
             if (currentchar == '\\') {
                 if (peek() == '\n' || peek() == '\r') {
                     advancePosition();
@@ -95,7 +95,7 @@ public class TclLexer extends AbstractTclLexer {
     protected String readWord() {
         StringBuilder name = new StringBuilder("");
         while (!Character.isWhitespace(currentchar) && currentchar != '['
-                && currentchar != ';' && currentchar != '$') {
+                && currentchar != ';' && currentchar != '$' && currentchar != 0) {
             if (currentchar == '\\') {
                 if (peek() == '\n' || peek() == '\r') {
                     advancePosition();
@@ -128,7 +128,7 @@ public class TclLexer extends AbstractTclLexer {
     protected String readString(char endchar) {
         StringBuilder string = new StringBuilder("");
         int counter = 1;
-        while (counter > 0) {
+        while (counter > 0 && currentchar != 0) {
             if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
                 advancePosition();
                 skipEOL();
@@ -161,7 +161,13 @@ public class TclLexer extends AbstractTclLexer {
         /*
          What is the next token
          */
-        if (currentchar == '{') {
+        if ((peekback() == '"' && qflag)
+                || peekback() == '{' || peekback() == '[') {
+            /*
+             Reading and returning a string of symbols
+             */
+            return new TclToken(TclTokenType.STRING).setValue(readString(peekback()));
+        } else if (currentchar == '{') {
             /*
              Returning a left brace token
              */
@@ -229,17 +235,11 @@ public class TclLexer extends AbstractTclLexer {
             advancePosition();
             return new TclToken(TclTokenType.DOLLAR);
         } else if ((currentchar == '_' || Character.isLetter(currentchar))
-                && retropeek() == '$') {
+                && peekback() == '$') {
             /*
              Returning a name token
              */
             return new TclToken(TclTokenType.NAME).setValue(readName());
-        } else if ((retropeek() == '"' && qflag)
-                || retropeek() == '{' || retropeek() == '[') {
-            /*
-             Reading and returning a string of symbols
-             */
-            return new TclToken(TclTokenType.STRING).setValue(readString(retropeek()));
         } else if ((currentchar == '_' || currentchar == '\\'
                 || Character.isDigit(currentchar) || Character.isLetter(currentchar))) {
             /*

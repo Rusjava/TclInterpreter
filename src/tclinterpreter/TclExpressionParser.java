@@ -86,8 +86,21 @@ public class TclExpressionParser extends AbstractTclParser {
          * If it begins with a number, return it. If it begins with an opening paranthesis get the expression in paranthesis
          */
         advanceToken(TclTokenType.NUMBER, TclTokenType.LEFTPAR,
-                TclTokenType.NOT, TclTokenType.BNOT, TclTokenType.PLUS, TclTokenType.MINUS);
+                TclTokenType.NOT, TclTokenType.BNOT, TclTokenType.PLUS, TclTokenType.MINUS, TclTokenType.LEFTQ);
         switch (currenttoken.type) {
+            case LEFTQ:
+                /*
+                A string in quotes
+                 */
+                advanceToken(TclTokenType.STRING, TclTokenType.RIGHTQ);
+                if (currenttoken.type == TclTokenType.STRING) {
+                    node = new TclNode(TclNodeType.QSTRING).setValue(currenttoken.getValue());
+                    advanceToken(TclTokenType.RIGHTQ);
+                } else {
+                    node = new TclNode(TclNodeType.QSTRING).setValue("");
+                }
+                checkRightParenthesis();
+                break;
             case NUMBER:
                 node = new TclNode(TclNodeType.NUMBER).setValue(currenttoken.getValue());
                 checkRightParenthesis();
