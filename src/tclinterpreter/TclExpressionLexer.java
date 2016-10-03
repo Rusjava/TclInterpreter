@@ -39,6 +39,23 @@ public class TclExpressionLexer extends AbstractTclLexer {
      * @return
      */
     protected String readNumber() {
+        /*
+        If this is an octal number?
+         */
+        if (currentchar == '0' && Character.isDigit(peek())) {
+            String oNumber = readOctalNumber();
+            advancePosition();
+            return oNumber;
+        }
+        /*
+        If this is an hex number?
+         */
+        if (currentchar == '0' && peek() == 'x') {
+            advancePosition();
+            String hNumber = readHexNumber();
+            advancePosition();
+            return hNumber;
+        }
         StringBuilder number = new StringBuilder("");
         /*
          This is a number if didgit, dot and exponetial characters are present     
@@ -125,8 +142,7 @@ public class TclExpressionLexer extends AbstractTclLexer {
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.LEQ);
-        }
-        else if (currentchar == '<') {
+        } else if (currentchar == '<') {
             /*
              Returning a less op token
              */
@@ -224,6 +240,18 @@ public class TclExpressionLexer extends AbstractTclLexer {
              */
             advancePosition();
             return new TclToken(TclTokenType.BOR);
+        } else if (currentchar == '?') {
+            /*
+             Returning a question mark token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.QM);
+        } else if (currentchar == ':') {
+            /*
+             Returning a colon token
+             */
+            advancePosition();
+            return new TclToken(TclTokenType.COLON);
         } else if (currentchar == '(') {
             /*
              Returning a left paranthesis op token

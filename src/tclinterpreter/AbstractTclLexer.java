@@ -167,9 +167,12 @@ public abstract class AbstractTclLexer {
      */
     protected String readOctalNumber() {
         StringBuilder oNumber = new StringBuilder("");
-        while (Character.isDigit(peek()) && (peek() != '8' || peek() != '9')) {
+        while (Character.isDigit(peek()) && (peek() != '8' && peek() != '9')) {
             advancePosition();
             oNumber.append(currentchar);
+        }
+        if (oNumber.length() == 0) {
+            oNumber.append("0");
         }
         return Integer.valueOf(oNumber.toString(), 8).toString();
     }
@@ -185,6 +188,9 @@ public abstract class AbstractTclLexer {
         while (Character.isDigit(peek()) || (Character.toLowerCase(peek()) >= 'a' && Character.toLowerCase(peek()) <= 'f')) {
             advancePosition();
             hNumber.append(currentchar);
+        }
+        if (hNumber.length() == 0) {
+            hNumber.append("0");
         }
         return Integer.valueOf(hNumber.toString(), 16).toString();
     }

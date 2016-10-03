@@ -41,7 +41,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected OpResult CalculateNode(TclNode node) throws TclExecutionException {
-        OpResult n1;
+        OpResult n1, n2, n3;
         /*
          Switching based on the node type
          */
@@ -85,7 +85,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                         }
                     case "!":
                         if (n1.isDouble()) {
-                            return new OpResult(new Long((n1.getDouble() == 0) ? 1 : 0));
+                            return new OpResult((n1.getDouble() == 0) ? 1l : 0l);
                         } else {
                             throw new TclExecutionException("Operation ! is only applicable to numeric types", node);
                         }
@@ -102,7 +102,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
              */
             case BINARYOP:
                 n1 = CalculateNode(node.getChildren().get(0));
-                OpResult n2 = CalculateNode(node.getChildren().get(1));
+                n2 = CalculateNode(node.getChildren().get(1));
                 switch (node.getValue()) {
                     case "+":
                         if (n1.isLong() && n2.isLong()) {
@@ -135,6 +135,12 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                             return new OpResult(n1.getDouble() / n2.getDouble());
                         } else {
                             throw new TclExecutionException("Operation / is only applicable to numeric types", node);
+                        }
+                    case "%":
+                        if (n1.isLong() && n2.isLong()) {
+                            return new OpResult(n1.getLong() % n2.getLong());
+                        } else {
+                            throw new TclExecutionException("Operation % is only applicable to integer types", node);
                         }
                     case "**":
                         if (n1.isLong() && n2.isLong()) {
@@ -223,6 +229,21 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                             throw new TclExecutionException("Operation || is only applicable to numeric types", node);
                         }
                 }
+                break;
+            /*
+             If the node is a ternary operation, apply it to its three arguments
+             */
+            case TERNARYOP:
+                n1 = CalculateNode(node.getChildren().get(0));
+                n2 = CalculateNode(node.getChildren().get(1));
+                n3 = CalculateNode(node.getChildren().get(2));
+                if (n1.isDouble()) {
+                    return n1.getDouble() != 0
+                            ? (n2.isLong() ? new OpResult(n2.getLong()) : (n2.isDouble() ? new OpResult(n2.getDouble()) : new OpResult(n2.toString())))
+                            : (n3.isLong() ? new OpResult(n3.getLong()) : (n3.isDouble() ? new OpResult(n3.getDouble()) : new OpResult(n3.toString())));
+                } else {
+                    throw new TclExecutionException("The first argument of a ternary operation must be a number!", node);
+                }
             default:
                 throw new TclExecutionException("Unknown node type", node);
         }
@@ -283,7 +304,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
          * @return
          */
         public boolean isDouble() {
-            return (doublevalue != null) ? true : false;
+            return doublevalue != null;
         }
 
         /**
@@ -292,7 +313,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
          * @return
          */
         public boolean isLong() {
-            return (intvalue != null) ? true : false;
+            return intvalue != null;
         }
 
         /**
@@ -301,7 +322,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
          * @return
          */
         public boolean isString() {
-            return (doublevalue == null && intvalue == null) ? true : false;
+            return doublevalue == null && intvalue == null;
         }
 
         /**

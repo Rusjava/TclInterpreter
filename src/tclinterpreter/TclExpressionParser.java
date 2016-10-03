@@ -94,7 +94,7 @@ public class TclExpressionParser extends AbstractTclParser {
                 break;
             case LEFTPAR:
                 fnumber++; //Increasing number of folded parantheses
-                node = getExpressionLevel(OPLEVELLIST.size() - 1);
+                node = getExpression();
                 checkRightParenthesis();
                 break;
             case MINUS:
@@ -127,6 +127,8 @@ public class TclExpressionParser extends AbstractTclParser {
         } catch (TclParserError error) {
             if ((currenttoken.type != TclTokenType.EOF
                     && currenttoken.type != TclTokenType.EXP
+                    && currenttoken.type != TclTokenType.QM
+                    && currenttoken.type != TclTokenType.COLON
                     && !OPSET.contains(currenttoken.type)
                     && currenttoken.type != TclTokenType.RIGHTPAR)) {
                 throw error;
@@ -217,6 +219,9 @@ public class TclExpressionParser extends AbstractTclParser {
             case DIV:
                 node.setValue("/");
                 break;
+            case REM:
+                node.setValue("%");
+                break;
             case EXP:
                 node.setValue("**");
                 break;
@@ -269,6 +274,44 @@ public class TclExpressionParser extends AbstractTclParser {
         return node;
     }
 
+    /**
+     * Returning the highest expression with ternary operation
+     *
+     * @return
+     * @throws tclinterpreter.AbstractTclParser.TclParserError
+     * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
+     */
+    protected TclNode getExpression() throws TclParserError, UnbalancedParenthesesException {
+        //Temporal node variables
+        TclNode arg;
+        TclNode op;
+        /*
+         Is the first token an argument?
+         */
+        arg = getExpressionLevel(OPLEVELLIST.size() - 1);
+        /*
+         Cycling over the long expression
+         */
+        if (currenttoken.type == TclTokenType.QM) {
+            op = new TclNode(TclNodeType.TERNARYOP);
+            op.setValue("?");
+            //Logical expression
+            op.getChildren().add(arg);
+            //The first choice
+            arg = getExpressionLevel(OPLEVELLIST.size() - 1);
+            op.getChildren().add(arg);
+            //If still tenary operation, get the second choice
+            if (currenttoken.type == TclTokenType.COLON) {
+                arg = getExpressionLevel(OPLEVELLIST.size() - 1);
+                op.getChildren().add(arg);
+                arg = op;
+            } else {
+                throw new TclParserError("Broken ternary operation!", currenttoken.type, TclTokenType.COLON);
+            }
+        }
+        return arg;
+    }
+
     @Override
     public TclNode parse() throws TclParserError {
         /*
@@ -276,7 +319,7 @@ public class TclExpressionParser extends AbstractTclParser {
          */
         TclNode result;
         try {
-            result = getExpressionLevel(OPLEVELLIST.size() - 1);
+            result = getExpression();
         } catch (TclParserError error) {
             if (error.ctokentype == TclTokenType.EOF) {
                 return new TclNode(TclNodeType.QSTRING).setValue("0");
