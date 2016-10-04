@@ -72,21 +72,38 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Set' command definition
          */
         COMMANDS.put("set", node -> {
-            String varname = readOPNode(node.getChildren().get(0));
-            String varvalue = readOPNode(node.getChildren().get(1));
-            context.setVaribale(varname, varvalue);
-            output.append(" ").append(varname).append("=").append(varvalue).append(";");
-            return varvalue;
+            String name = readOPNode(node.getChildren().get(0));
+            String value = readOPNode(node.getChildren().get(1));
+            String index = null;
+            //Checking if a variable or an array element needs to be set
+            if (node.getChildren().get(0).getChildren().isEmpty()) {
+                context.setVaribale(name, value);
+                output.append(" ").append(name).append("=").append(value).append(";");
+            } else {
+                index = readOPNode(node.getChildren().get(0).getChildren().get(0));
+                context.setArrayElement(name, index, value);
+                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
+            }
+            return value;
         });
 
         /*
          'Unset' command definition
          */
         COMMANDS.put("unset", node -> {
-            String varname = readOPNode(node.getChildren().get(0));
-            context.deleteVaribale(varname);
-            output.append(" ").append(varname).append("=").append("undefined").append(";");
-            return varname;
+            String name = readOPNode(node.getChildren().get(0));
+            String index = null;
+            //Checking if a variable of an array element needs to removed
+            if (node.getChildren().get(0).getChildren().isEmpty()) {
+                context.deleteVaribale(name);
+                output.append(" ").append(name).append("=").append("undefined;");
+                return context.getVaribale(name);
+            } else {
+                index = readOPNode(node.getChildren().get(0).getChildren().get(0));
+                context.deleteArrayElement(name, index);
+                output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
+                return context.getArrayElement(name, index);
+            }
         });
 
         /*

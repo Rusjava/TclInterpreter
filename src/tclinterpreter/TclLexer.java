@@ -36,6 +36,7 @@ public class TclLexer extends AbstractTclLexer {
         MIRRORMAP.put('"', '"');
         MIRRORMAP.put('[', ']');
         MIRRORMAP.put('{', '}');
+        MIRRORMAP.put('(', ')');
     }
 
     /**
@@ -52,6 +53,11 @@ public class TclLexer extends AbstractTclLexer {
      * Flag indicating that the lexer is inside brackets
      */
     protected boolean brflag;
+    
+    /**
+     * Flag indicating that the lexer is inside parantheses
+     */
+    protected boolean prflag;
 
     /**
      * Constructor
@@ -162,7 +168,7 @@ public class TclLexer extends AbstractTclLexer {
          What is the next token
          */
         if ((peekback() == '"' && qflag)
-                || peekback() == '{' || peekback() == '[') {
+                || peekback() == '{' || peekback() == '[' || peekback() == '(') {
             /*
              Reading and returning a string of symbols
              */
@@ -213,8 +219,7 @@ public class TclLexer extends AbstractTclLexer {
              */
             skipWhitespace();
             return new TclToken(TclTokenType.WHITESPACE);
-        }
-        if (currentchar == '[') {
+        } else if (currentchar == '[') {
             /*
              Returning a left bracket token
              */
@@ -228,6 +233,20 @@ public class TclLexer extends AbstractTclLexer {
             brflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTBR);
+        } else if (currentchar == '(') {
+            /*
+             Returning a left paranthesis token
+             */
+            prflag = true;
+            advancePosition();
+            return new TclToken(TclTokenType.LEFTPAR);
+        } else if (currentchar == ')') {
+            /*
+             Returning a right paranthesis token
+             */
+            prflag = false;
+            advancePosition();
+            return new TclToken(TclTokenType.RIGHTPAR);
         } else if (currentchar == '$') {
             /*
              Returning a dollar token

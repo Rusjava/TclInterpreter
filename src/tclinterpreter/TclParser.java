@@ -108,6 +108,29 @@ public class TclParser extends AbstractTclParser {
                             operand.getChildren().add(new TclNode(TclNodeType.NAME).
                                     setValue(currenttoken.getValue()));
                             break;
+                        case LEFTPAR:
+                            /*
+                            An array index
+                             */
+                            if (previoustoken.type == TclTokenType.NAME) {
+                                /*
+                             A string in parantheses - array index
+                                 */
+                                advanceToken(TclTokenType.STRING, TclTokenType.RIGHTPAR);
+                                if (currenttoken.type == TclTokenType.STRING) {
+                                    operand.getChildren().get(operand.getChildren().size() - 1)
+                                            .getChildren().add(new TclNode(TclNodeType.QSTRING).
+                                                    setValue(currenttoken.getValue()));
+                                    advanceToken(TclTokenType.RIGHTPAR);
+                                } else {
+                                    operand.getChildren().get(operand.getChildren().size() - 1)
+                                            .getChildren().add(new TclNode(TclNodeType.QSTRING).
+                                                    setValue(""));
+                                }
+                            } else {
+                                throw new TclParserError("Index without an array!", TclTokenType.NAME, previoustoken.type);
+                            }
+                            break;
                         case LEFTCURL:
                             /*
                              A string in curly brackets

@@ -38,12 +38,18 @@ public class TclInterpreterContext {
     protected Map<String, String> variables;
 
     /**
+     * Local arrays associated with the context
+     */
+    protected Map<String, Map<String, String>> arrays;
+
+    /**
      * Constructor
+     *
      * @param uppercontext the upper level context
      */
     public TclInterpreterContext(TclInterpreterContext uppercontext) {
         variables = new HashMap<>();
-        this.upperlevelcontext=uppercontext;
+        this.upperlevelcontext = uppercontext;
     }
 
     /**
@@ -53,6 +59,15 @@ public class TclInterpreterContext {
      */
     public Map<String, String> getVariables() {
         return variables;
+    }
+
+    /**
+     * Returning the arrays map
+     *
+     * @return
+     */
+    public Map<String, Map<String, String>> getArrays() {
+        return arrays;
     }
 
     /**
@@ -75,6 +90,17 @@ public class TclInterpreterContext {
     }
 
     /**
+     * Getting value of an element of a particular local array
+     *
+     * @param name variable name
+     * @param index array index
+     * @return
+     */
+    public String getArrayElement(String name, String index) {
+        return arrays.get(name) == null ? null : arrays.get(name).get(index);
+    }
+
+    /**
      * Deleting a particular local variable
      *
      * @param name variable name
@@ -84,12 +110,43 @@ public class TclInterpreterContext {
     }
 
     /**
-     * Setting value of a particular local variable
+     * Deleting a particular element of an array
+     *
+     * @param name array name
+     * @param index array index
+     */
+    public void deleteArrayElement(String name, String index) {
+        if (arrays.remove(name) != null) {
+            arrays.remove(name).remove(index);
+            //Removing array if it has become empty
+            if (arrays.remove(name).isEmpty()) {
+                arrays.remove(name);
+            }
+        }
+    }
+
+    /**
+     * Setting the value of a particular local variable
      *
      * @param name variable name
      * @param value variable value
      */
     public void setVaribale(String name, String value) {
         variables.put(name, value);
+    }
+
+    /**
+     * Setting the value of a particular element of a local array
+     *
+     * @param name array name
+     * @param index array index
+     * @param value array element value
+     */
+    public void setArrayElement(String name, String index, String value) {
+        //Creating the array if it does not exist
+        if (arrays.get(name) == null) {
+            arrays.put(name, new HashMap<>());
+        }
+        arrays.get(name).put(index, value);
     }
 }
