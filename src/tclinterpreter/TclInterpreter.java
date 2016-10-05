@@ -74,7 +74,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("set", node -> {
             String name = readOPNode(node.getChildren().get(0));
             String value = readOPNode(node.getChildren().get(1));
-            String index = null;
+            String index;
             //Checking if a variable or an array element needs to be set
             if (node.getChildren().get(0).getChildren().isEmpty()) {
                 context.setVaribale(name, value);
@@ -92,9 +92,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("unset", node -> {
             String name = readOPNode(node.getChildren().get(0));
-            String index = null;
+            String index;
             //Checking if a variable of an array element needs to removed
-            if (node.getChildren().get(0).getChildren().isEmpty()) {
+            if (node.getChildren().get(0).getChildren().size() == 1) {
                 context.deleteVaribale(name);
                 output.append(" ").append(name).append("=").append("undefined;");
                 return context.getVaribale(name);
@@ -169,7 +169,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
         for (TclNode child : node.getChildren()) {
             switch (child.type) {
                 case NAME:
-                    str.append(context.getVaribale(child.getValue()));
+                    if (child.getChildren().isEmpty()) {
+                        str.append(context.getVaribale(child.getValue()));
+                    } else {
+                        str.append(context.getArrayElement(child.getValue(), child.getChildren().get(0).getValue()));
+                    }
                     break;
                 case QSTRING:
                     str.append(child.getValue());
