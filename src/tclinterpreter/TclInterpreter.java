@@ -74,13 +74,17 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("set", node -> {
             String name = readOPNode(node.getChildren().get(0));
             String value = readOPNode(node.getChildren().get(1));
-            String index;
+            String index = null;
+            //Checking if the name is the variable of array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
+            }
             //Checking if a variable or an array element needs to be set
-            if (node.getChildren().get(0).getChildren().isEmpty()) {
+            if (index == null) {
                 context.setVaribale(name, value);
                 output.append(" ").append(name).append("=").append(value).append(";");
             } else {
-                index = readOPNode(node.getChildren().get(0).getChildren().get(0));
                 context.setArrayElement(name, index, value);
                 output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
             }
@@ -92,14 +96,18 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("unset", node -> {
             String name = readOPNode(node.getChildren().get(0));
-            String index;
+            String index = null;
+            //Checking if the name is the variable of array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
+            }
             //Checking if a variable of an array element needs to removed
-            if (node.getChildren().get(0).getChildren().size() == 1) {
+            if (index == null) {
                 context.deleteVaribale(name);
                 output.append(" ").append(name).append("=").append("undefined;");
                 return context.getVaribale(name);
             } else {
-                index = readOPNode(node.getChildren().get(0).getChildren().get(0));
                 context.deleteArrayElement(name, index);
                 output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
                 return context.getArrayElement(name, index);
@@ -169,16 +177,12 @@ public class TclInterpreter extends AbstractTclInterpreter {
         for (TclNode child : node.getChildren()) {
             switch (child.type) {
                 case NAME:
-                    if (child.getChildren().isEmpty()) {
-                        str.append(context.getVaribale(child.getValue()));
-                    } else {
-                        str.append(context.getArrayElement(child.getValue(), child.getChildren().get(0).getValue()));
-                    }
+                    str.append(readVariable(child.getValue()));
                     break;
-                case QSTRING:
+                case SUBSTRING:
                     str.append(child.getValue());
                     break;
-                case CURLYSTRING:
+                case STRING:
                     str.append(child.getValue());
                     break;
                 case PROGRAM:
@@ -203,6 +207,27 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
         }
         return str.toString();
+    }
+
+    /**
+     * Reading a variable or an array element based on the name string
+     * 
+     * @param name
+     * @return
+     */
+    protected String readVariable(String name) {
+        String index = null;
+        //Checking if the name is a variable id or an array id
+        if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+            index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+            name = name.substring(0, name.lastIndexOf('('));
+        }
+        //Reading either the variable of an array element 
+        if (index == null) {
+            return context.getVaribale(name);
+        } else {
+            return context.getArrayElement(name, index);
+        }
     }
 
     /**

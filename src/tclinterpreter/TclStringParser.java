@@ -34,7 +34,7 @@ public class TclStringParser extends AbstractTclParser {
 
     @Override
     public TclNode parse() throws TclParserError {
-        TclNode node = new TclNode(TclNodeType.QSTRING).setValue(lexer.getScript());
+        TclNode node = new TclNode(TclNodeType.STRING).setValue(lexer.getScript());
         do {
             try {
                 advanceToken(TclTokenType.EOF);
@@ -66,7 +66,7 @@ public class TclStringParser extends AbstractTclParser {
                         /*
                          A string without substitutions
                          */
-                        node.getChildren().add(new TclNode(TclNodeType.QSTRING).
+                        node.getChildren().add(new TclNode(TclNodeType.SUBSTRING).
                                 setValue(currenttoken.getValue()));
                         break;
                     default:

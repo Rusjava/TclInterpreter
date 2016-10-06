@@ -34,18 +34,28 @@ public class TclStringLexer extends AbstractTclLexer {
     }
 
     /**
-     * Reading alphanumerical names from the script
+     * Reading alphanumerical names (with possible index in parentheses) from the script
      *
      * @return
      */
     protected String readName() {
         StringBuilder name = new StringBuilder("");
+        int counter = 0; //Parentheses counter
         while ((Character.isDigit(currentchar)
                 || Character.isLetter(currentchar)
-                || currentchar == '_') && currentchar != 0) {
+                || currentchar == '_'
+                || currentchar == '('
+                || (currentchar == ')' && counter != 0)
+                || currentchar == '\\') && currentchar != 0) {
             if (currentchar == '\\') {
                 name.append(replaceSymbol());
             } else {
+                //Incrementing or decrementing parentheses counter
+                if (currentchar == '(') {
+                    counter++;
+                } else if (currentchar == ')') {
+                    counter--;
+                }
                 name.append(currentchar);
                 advancePosition();
             }

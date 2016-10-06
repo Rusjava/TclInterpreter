@@ -94,10 +94,10 @@ public class TclExpressionParser extends AbstractTclParser {
                  */
                 advanceToken(TclTokenType.STRING, TclTokenType.RIGHTQ);
                 if (currenttoken.type == TclTokenType.STRING) {
-                    node = new TclNode(TclNodeType.QSTRING).setValue(currenttoken.getValue());
+                    node = new TclNode(TclNodeType.STRING).setValue(currenttoken.getValue());
                     advanceToken(TclTokenType.RIGHTQ);
                 } else {
-                    node = new TclNode(TclNodeType.QSTRING).setValue("");
+                    node = new TclNode(TclNodeType.STRING).setValue("");
                 }
                 checkRightParenthesis();
                 break;
@@ -335,7 +335,7 @@ public class TclExpressionParser extends AbstractTclParser {
             result = getExpression();
         } catch (TclParserError error) {
             if (error.ctokentype == TclTokenType.EOF) {
-                return new TclNode(TclNodeType.QSTRING).setValue("0");
+                return new TclNode(TclNodeType.STRING).setValue("0");
             } else {
                 throw error;
             }

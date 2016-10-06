@@ -36,7 +36,6 @@ public class TclLexer extends AbstractTclLexer {
         MIRRORMAP.put('"', '"');
         MIRRORMAP.put('[', ']');
         MIRRORMAP.put('{', '}');
-        MIRRORMAP.put('(', ')');
     }
 
     /**
@@ -53,11 +52,6 @@ public class TclLexer extends AbstractTclLexer {
      * Flag indicating that the lexer is inside brackets
      */
     protected boolean brflag;
-    
-    /**
-     * Flag indicating that the lexer is inside parantheses
-     */
-    protected boolean prflag;
 
     /**
      * Constructor
@@ -69,20 +63,30 @@ public class TclLexer extends AbstractTclLexer {
     }
 
     /**
-     * Reading alphanumerical names from the script
+     * Reading alphanumerical names (with possible index in parentheses) from the script
      *
      * @return
      */
     protected String readName() {
         StringBuilder name = new StringBuilder("");
+        int counter = 0; //Parentheses counter
         while ((Character.isDigit(currentchar)
                 || Character.isLetter(currentchar)
-                || currentchar == '_') && currentchar != 0) {
+                || currentchar == '_'
+                || currentchar == '('
+                || (currentchar == ')' && counter > 0))
+                && currentchar != 0) {
             if (currentchar == '\\') {
                 if (peek() == '\n' || peek() == '\r') {
                     advancePosition();
                     skipEOL();
                 } else {
+                    //Incrementing or decrementing parentheses counter
+                    if (currentchar == '(') {
+                        counter++;
+                    } else if (currentchar == ')') {
+                        counter--;
+                    }
                     name.append(replaceSymbol());
                 }
             } else {
@@ -233,20 +237,6 @@ public class TclLexer extends AbstractTclLexer {
             brflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTBR);
-        } else if (currentchar == '(') {
-            /*
-             Returning a left paranthesis token
-             */
-            prflag = true;
-            advancePosition();
-            return new TclToken(TclTokenType.LEFTPAR);
-        } else if (currentchar == ')') {
-            /*
-             Returning a right paranthesis token
-             */
-            prflag = false;
-            advancePosition();
-            return new TclToken(TclTokenType.RIGHTPAR);
         } else if (currentchar == '$') {
             /*
              Returning a dollar token

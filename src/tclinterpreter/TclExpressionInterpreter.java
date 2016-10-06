@@ -67,7 +67,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
             /*
              If the node is a string, just get its value
              */
-            case QSTRING:
+            case STRING:
                 return new OpResult(node.getValue());
             /*
              If the node is an unary operation, apply it to the argument

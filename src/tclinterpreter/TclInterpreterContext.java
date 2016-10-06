@@ -49,6 +49,7 @@ public class TclInterpreterContext {
      */
     public TclInterpreterContext(TclInterpreterContext uppercontext) {
         variables = new HashMap<>();
+        arrays = new HashMap<>();
         this.upperlevelcontext = uppercontext;
     }
 
