@@ -32,7 +32,7 @@ public class TclExpressionLexer extends AbstractTclLexer {
      * @param script
      */
     public TclExpressionLexer(String script) {
-        super(script);
+        super(script, true);
     }
 
     /**
@@ -91,16 +91,7 @@ public class TclExpressionLexer extends AbstractTclLexer {
     }
 
     @Override
-    public TclToken getToken() {
-        /*
-         Skipping any whitespace
-         */
-        if (Character.isWhitespace(currentchar)) {
-            /*
-             Returning a real number token
-             */
-            skipWhitespace();
-        }
+    public TclToken getCustomToken() {
 
         if (peekback() == '"' && qflag) {
             /*
@@ -299,17 +290,8 @@ public class TclExpressionLexer extends AbstractTclLexer {
             qflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTQ);
-        } else if (currentchar == 0) {
-            /*
-             Reading and returning end of file
-             */
-            return new TclToken(TclTokenType.EOF);
         } else {
-            /*
-             Returning an unknown token
-             */
-            advancePosition();
-            return new TclToken(TclTokenType.UNKNOWN);
+            return null;
         }
     }
 }

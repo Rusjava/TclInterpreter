@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,23 +70,38 @@ public class TclInterpreter extends AbstractTclInterpreter {
      */
     {
         /*
+          Empty command
+         */
+        COMMANDS.put("eof", node -> {
+            return null;
+        });
+        /*
          'Set' command definition
          */
         COMMANDS.put("set", node -> {
             String name = readOPNode(node.getChildren().get(0));
-            String value = readOPNode(node.getChildren().get(1));
+            String value;
             String index = null;
             //Checking if the name is the variable of array id
             if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
                 index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
                 name = name.substring(0, name.lastIndexOf('('));
             }
-            //Checking if a variable or an array element needs to be set
-            if (index == null) {
-                context.setVaribale(name, value);
+            //Checking if a variable or an array element needs to be set or retrived
+            if (node.getChildren().size() == 2) {
+                value = readOPNode(node.getChildren().get(1));
+                if (index == null) {
+                    context.setVaribale(name, value);
+                    output.append(" ").append(name).append("=").append(value).append(";");
+                } else {
+                    context.setArrayElement(name, index, value);
+                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
+                }
+            } else if (index == null) {
+                value = context.getVaribale(name);
                 output.append(" ").append(name).append("=").append(value).append(";");
             } else {
-                context.setArrayElement(name, index, value);
+                value = context.getArrayElement(name, index);
                 output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
             }
             return value;
@@ -180,8 +196,6 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     str.append(readVariable(child.getValue()));
                     break;
                 case SUBSTRING:
-                    str.append(child.getValue());
-                    break;
                 case STRING:
                     str.append(child.getValue());
                     break;
@@ -211,7 +225,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
 
     /**
      * Reading a variable or an array element based on the name string
-     * 
+     *
      * @param name
      * @return
      */
@@ -240,7 +254,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
         List<TclNode> chld = program.getChildren();
         String lastResult = null;
         for (TclNode node : chld) {
-            lastResult = executeCommand(node);
+            String res = executeCommand(node);
+            lastResult = (res == null) ? lastResult : res;
         }
         return lastResult;
     }

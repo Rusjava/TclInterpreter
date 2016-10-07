@@ -55,23 +55,25 @@ public class TclParser extends AbstractTclParser {
      */
     protected TclNode getCommand() throws TclParserError {
         TclNode node = new TclNode(TclNodeType.COMMAND);
+        node.setValue("eof");
         TclNode operand = null;
-        /*
-         Any should begin with a word with a possible leading whitespace
-         */
-        advanceToken(TclTokenType.WORD, TclTokenType.WHITESPACE, TclTokenType.EOL);
-        if (currenttoken.type != TclTokenType.WORD) {
-            advanceToken(TclTokenType.WORD);
-        }
-        node.setValue(currenttoken.getValue());
-        /*
-         There should be a whitespace after the command name
-         */
-        advanceToken(TclTokenType.WHITESPACE);
-        /**
-         * Cycling over arguments
-         */
         try {
+            /*
+            Any should begin with a word with a possible leading whitespace
+             */
+            advanceToken(TclTokenType.WORD, TclTokenType.WHITESPACE, TclTokenType.EOL);
+            if (currenttoken.type != TclTokenType.WORD) {
+                advanceToken(TclTokenType.WORD);
+            }
+            node.setValue(currenttoken.getValue());
+            /*
+            There should be a whitespace after the command name
+             */
+            advanceToken(TclTokenType.WHITESPACE);
+            /**
+             * Cycling over arguments
+             */
+
             /*
              Getting operands
              */
@@ -81,7 +83,7 @@ public class TclParser extends AbstractTclParser {
                      Skipping whitespace tokens
                      */
                     advanceToken(TclTokenType.WHITESPACE);
-                } catch (TclParserError error) {
+                } catch (TclParserError innererror) {
                     /*
                      Creating a new operand node after whitespace
                      */
@@ -150,14 +152,14 @@ public class TclParser extends AbstractTclParser {
                             }
                             break;
                         default:
-                            throw error;
+                            throw innererror;
                     }
                 }
             }
         } catch (TclParserError outererror) {
-            if (currenttoken.type == TclTokenType.EOL || currenttoken.type == TclTokenType.SEMI) {
-
-            } else {
+            // Throw an error if not end of line, semi-colon or end of file
+            if (currenttoken.type != TclTokenType.EOL
+                    && currenttoken.type != TclTokenType.SEMI && currenttoken.type != TclTokenType.EOF) {
                 throw outererror;
             }
         }
@@ -167,15 +169,10 @@ public class TclParser extends AbstractTclParser {
     @Override
     public TclNode parse() throws TclParserError {
         TclNode node = new TclNode(TclNodeType.PROGRAM).setValue("test script");
-        try {
-            while (true) {
-                node.getChildren().add(getCommand());
-            }
-        } catch (TclParserError error) {
-            if (currenttoken.type == TclTokenType.EOF) {
-                return node;
-            }
-            throw error;
-        }
+        //Cyclying over commands until the end of file is reached
+        do {
+            node.getChildren().add(getCommand());
+        } while (currenttoken.type != TclTokenType.EOF);
+        return node;
     }
 }

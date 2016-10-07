@@ -59,11 +59,12 @@ public class TclLexer extends AbstractTclLexer {
      * @param script a TCL script to interpret
      */
     public TclLexer(String script) {
-        super(script);
+        super(script, false);
     }
 
     /**
-     * Reading alphanumerical names (with possible index in parentheses) from the script
+     * Reading alphanumerical names (with possible index in parentheses) from
+     * the script
      *
      * @return
      */
@@ -122,13 +123,6 @@ public class TclLexer extends AbstractTclLexer {
     }
 
     /**
-     * Skipping end of line and any whitespace after it
-     */
-    protected void skipEOL() {
-        skipWhitespace();
-    }
-
-    /**
      * Reading the string between quotes of curly braces with ends of lines
      * skipped
      *
@@ -159,15 +153,7 @@ public class TclLexer extends AbstractTclLexer {
     }
 
     @Override
-    public TclToken getToken() {
-        /*
-         Skipping any leading escaped end of line
-         */
-        if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
-            advancePosition();
-            skipEOL();
-        }
-
+    public TclToken getCustomToken() {
         /*
          What is the next token
          */
@@ -255,16 +241,8 @@ public class TclLexer extends AbstractTclLexer {
              Returning a Tclword token
              */
             return new TclToken(TclTokenType.WORD).setValue(readWord());
-        } else if (currentchar == 0) {
-            /*
-             Returning an end of file token
-             */
-            return new TclToken(TclTokenType.EOF);
         } else {
-            /*
-             Returning UNKNOWN token in all other cases
-             */
-            return new TclToken(TclTokenType.UNKNOWN);
+            return null;
         }
     }
 }

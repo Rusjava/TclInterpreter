@@ -30,7 +30,7 @@ public class TclStringLexer extends AbstractTclLexer {
      * @param script
      */
     public TclStringLexer(String script) {
-        super(script);
+        super(script, false);
     }
 
     /**
@@ -96,7 +96,7 @@ public class TclStringLexer extends AbstractTclLexer {
     }
 
     @Override
-    public TclToken getToken() {
+    public TclToken getCustomToken() {
         /*
          What is the next token
          */
@@ -129,11 +129,6 @@ public class TclStringLexer extends AbstractTclLexer {
              Reading and returning a string representing a script
              */
             return new TclToken(TclTokenType.STRING).setValue(readCommandString());
-        } else if (currentchar == 0) {
-            /*
-             Reading and returning end of file
-             */
-            return new TclToken(TclTokenType.EOF);
         } else {
             /*
              Reading and returning EOF
