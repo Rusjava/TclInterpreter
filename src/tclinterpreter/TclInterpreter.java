@@ -18,6 +18,7 @@ package tclinterpreter;
 
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -79,7 +80,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Set' command definition
          */
         COMMANDS.put("set", node -> {
-            String name = readOPNode(node.getChildren().get(0));
+            String name = readOpNode(node.getChildren().get(0));
             String value;
             String index = null;
             //Checking if the name is the variable of array id
@@ -89,7 +90,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Checking if a variable or an array element needs to be set or retrived
             if (node.getChildren().size() == 2) {
-                value = readOPNode(node.getChildren().get(1));
+                value = readOpNode(node.getChildren().get(1));
                 if (index == null) {
                     context.setVaribale(name, value);
                     output.append(" ").append(name).append("=").append(value).append(";");
@@ -111,7 +112,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Unset' command definition
          */
         COMMANDS.put("unset", node -> {
-            String name = readOPNode(node.getChildren().get(0));
+            String name = readOpNode(node.getChildren().get(0));
             String index = null;
             //Checking if the name is the variable of array id
             if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
@@ -134,7 +135,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Puts' command definition
          */
         COMMANDS.put("puts", node -> {
-            String value = readOPNode(node.getChildren().get(0));
+            String value = readOpNode(node.getChildren().get(0));
             out.append("Tcl> ")
                     .append(value)
                     .append("\n");
@@ -147,7 +148,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("expr", node -> {
             //Reading the expression after all allowed substitutions
-            String expr = readOPNode(node.getChildren().get(0));
+            String expr = readOpNode(node.getChildren().get(0));
             //The second round of substitutions
             TclNode exprNode = null;
             try {
@@ -157,7 +158,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Interpreting the expression
             TclExpressionInterpreter inter = new TclExpressionInterpreter(
-                    new TclExpressionParser(new TclExpressionLexer(readOPNode(exprNode))));
+                    new TclExpressionParser(new TclExpressionLexer(readOpNode(exprNode))));
             String result = null;
             try {
                 result = inter.run();
@@ -167,6 +168,41 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
             }
             output.append(" expression=").append(result).append(";");
+            return result;
+        });
+
+        /*
+         'if' command definition
+         */
+        COMMANDS.put("if", node -> {
+            String result = null;
+            //Creating an iterator over the list of arguments
+            Iterator<TclNode> iter = node.getChildren().iterator();
+            String expression = readOpNode(iter.next());
+            //Iterating
+            while (iter.hasNext()) {
+                result = readOpNode(iter.next());
+                //If the next argument is equel to 'then', then go to the next argument
+                if (result.toLowerCase().equals("then")) {
+                    result = readOpNode(iter.next());
+                }
+                //If the condition is true return the first expression
+                //In other case read and return the last expression or if 'elseif' go to the next iteration
+                if (readBooleanString(expression) == 1) {
+                    return result;
+                } else {
+                    result = readOpNode(iter.next());
+                    switch (result.toLowerCase()) {
+                        case "elseif":
+                            expression = readOpNode(iter.next());
+                            break;
+                        case "else":
+                            result = readOpNode(iter.next());
+                        default:
+                            return result;
+                    }
+                }
+            }
             return result;
         });
     }
@@ -183,12 +219,12 @@ public class TclInterpreter extends AbstractTclInterpreter {
     }
 
     /**
-     * Evaluating the value of the operand
+     * Evaluating the value of the opnode
      *
      * @param node
      * @return
      */
-    protected String readOPNode(TclNode node) {
+    protected String readOpNode(TclNode node) {
         StringBuilder str = new StringBuilder("");
         for (TclNode child : node.getChildren()) {
             switch (child.type) {
@@ -241,6 +277,34 @@ public class TclInterpreter extends AbstractTclInterpreter {
             return context.getVaribale(name);
         } else {
             return context.getArrayElement(name, index);
+        }
+    }
+
+    /**
+     * Interpreting a string as a boolean value
+     *
+     * @param str
+     * @return
+     */
+    protected Long readBooleanString(String str) {
+        try {
+            double nres = Double.parseDouble(str);
+            if (nres == 0) {
+                return 0l;
+            } else {
+                return 1l;
+            }
+        } catch (NumberFormatException ex) {
+            switch (str.toLowerCase()) {
+                case "yes":
+                case "true":
+                    return 1l;
+                case "no":
+                case "false":
+                    return 0l;
+                default:
+                    return null;
+            }
         }
     }
 

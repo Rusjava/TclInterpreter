@@ -82,15 +82,15 @@ public class TclLexer extends AbstractTclLexer {
                     advancePosition();
                     skipEOL();
                 } else {
-                    //Incrementing or decrementing parentheses counter
-                    if (currentchar == '(') {
-                        counter++;
-                    } else if (currentchar == ')') {
-                        counter--;
-                    }
                     name.append(replaceSymbol());
                 }
             } else {
+                //Incrementing or decrementing parentheses counter
+                if (currentchar == '(') {
+                    counter++;
+                } else if (currentchar == ')') {
+                    counter--;
+                }
                 name.append(currentchar);
                 advancePosition();
             }
@@ -163,21 +163,21 @@ public class TclLexer extends AbstractTclLexer {
              Reading and returning a string of symbols
              */
             return new TclToken(TclTokenType.STRING).setValue(readString(peekback()));
-        } else if (currentchar == '{') {
+        } else if (currentchar == '{' && Character.isWhitespace(peekback())) {
             /*
              Returning a left brace token
              */
             curlyflag = true;
             advancePosition();
             return new TclToken(TclTokenType.LEFTCURL);
-        } else if (currentchar == '}') {
+        } else if (currentchar == '}' && curlyflag) {
             /*
              Returning a right brace token
              */
             curlyflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTCURL);
-        } else if (currentchar == '"' && !qflag) {
+        } else if (currentchar == '"' && !qflag && Character.isWhitespace(peekback())) {
             /*
              Returning a left quote token
              */
