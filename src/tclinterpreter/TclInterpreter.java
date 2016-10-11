@@ -36,7 +36,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
     /**
      * A map for Tcl keywords
      */
-    public final Map<String, TclCommand<TclNode, String>> COMMANDS = new HashMap<>();
+    public final Map<String, GenericTclCommand> COMMANDS = new HashMap<>();
 
     /**
      * Constructor, which sets up the interpreter with an attached parser
@@ -72,201 +72,210 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          Empty command
          */
-        COMMANDS.put("eof", node -> {
-            return null;
-        });
+        COMMANDS.put("eof", new GenericTclCommand("set", 0, null));
         /*
          'Set' command definition
          */
-        COMMANDS.put("set", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least operand is present, then execute the commnd
-            if (node.getChildren().size() >= 1) {
-                String value = null;
-                String index = null;
-                String name = readOpNode(node.getChildren().get(0));
-                //Checking if the name is the variable of array id
-                if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                    index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                    name = name.substring(0, name.lastIndexOf('('));
-                }
-                if (node.getChildren().size() >= 2) {
-                    //If at least two operands, set the variable or array element
-                    value = readOpNode(node.getChildren().get(1));
-                    if (index == null) {
-                        context.setVaribale(name, value);
-                        output.append(" ").append(name).append("=").append(value).append(";");
-                    } else {
-                        context.setArrayElement(name, index, value);
-                        output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
-                    }
-                } else //If only one opernad, read and return the variable or array element
-                {
-                    if (index == null) {
-                        value = context.getVaribale(name);
-                        output.append(" ").append(name).append("=").append(value).append(";");
-                    } else {
-                        value = context.getArrayElement(name, index);
-                        output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
-                    }
-                }
-                return value;
-            } else {
-                //In no operands, throw an error
-                throw new TclExecutionException("'set' command must have at least one argument!", node);
+        COMMANDS.put("set", new GenericTclCommand("set", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String value;
+            String index = null;
+            String name = readOpNode(node.getChildren().get(0));
+            //Checking if the name is the variable of array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
             }
-        });
+            if (node.getChildren().size() >= 2) {
+                //If at least two operands, set the variable or array element
+                value = readOpNode(node.getChildren().get(1));
+                if (index == null) {
+                    context.setVaribale(name, value);
+                    output.append(" ").append(name).append("=").append(value).append(";");
+                } else {
+                    context.setArrayElement(name, index, value);
+                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
+                }
+            } else //If only one opernad, read and return the variable or array element
+            {
+                if (index == null) {
+                    value = context.getVaribale(name);
+                    output.append(" ").append(name).append("=").append(value).append(";");
+                } else {
+                    value = context.getArrayElement(name, index);
+                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
+                }
+            }
+            return value;
+        }));
 
         /*
          'Unset' command definition
          */
-        COMMANDS.put("unset", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least one operand, remove the variable or array element
-            if (node.getChildren().size() >= 1) {
-                String index = null;
-                String name = readOpNode(node.getChildren().get(0));
-                //Checking if the name is the variable of array id
-                if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                    index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                    name = name.substring(0, name.lastIndexOf('('));
-                }
-                //Checking if a variable of an array element needs to removed
-                if (index == null) {
-                    context.deleteVaribale(name);
-                    output.append(" ").append(name).append("=").append("undefined;");
-                    return context.getVaribale(name);
-                } else {
-                    context.deleteArrayElement(name, index);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
-                    return context.getArrayElement(name, index);
-                }
-            } else {
-                //In no operands, throw an error
-                throw new TclExecutionException("'unset' command must have at least one argument!", node);
+        COMMANDS.put("unset", new GenericTclCommand("unset", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String index = null;
+            String name = readOpNode(node.getChildren().get(0));
+            //Checking if the name is the variable of array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
             }
-        });
+            //Checking if a variable of an array element needs to removed
+            if (index == null) {
+                context.deleteVaribale(name);
+                output.append(" ").append(name).append("=").append("undefined;");
+                return context.getVaribale(name);
+            } else {
+                context.deleteArrayElement(name, index);
+                output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
+                return context.getArrayElement(name, index);
+            }
+
+        }));
 
         /*
          'Puts' command definition
          */
-        COMMANDS.put("puts", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least one operand, print the operand
-            if (node.getChildren().size() >= 1) {
-                String value = readOpNode(node.getChildren().get(0));
-                out.append("Tcl> ")
-                        .append(value)
-                        .append("\n");
-                output.append(" output: ").append(value).append(";");
-                return value;
-            } else {
-                //In no operands, throw an error
-                throw new TclExecutionException("'puts' command must have at least one argument!", node);
-            }
-        });
+        COMMANDS.put("puts", new GenericTclCommand("puts", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String value = readOpNode(node.getChildren().get(0));
+            out.append("Tcl> ")
+                    .append(value)
+                    .append("\n");
+            output.append(" output: ").append(value).append(";");
+            return value;
+        }));
 
         /*
          'Expr' command definition
          */
-        COMMANDS.put("expr", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least one operand, interprert the it as an expression
-            if (node.getChildren().size() >= 1) {
-                //Reading the expression after all substitutions
-                String result = readOpNode(node.getChildren().get(0));
-                //The second round of substitutions
-                result = evaluateExpression(result, node);
-                //Creating output
-                output.append(" expression=").append(result).append(";");
-                return result;
-            } else {
-                //In no operands, throw an error
-                throw new TclExecutionException("'expr' command must have at least one argument!", node);
-            }
-        });
-
+        COMMANDS.put("expr", new GenericTclCommand("expr", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+            //The second round of substitutions
+            String result = evaluateExpression(readOpNode(node.getChildren().get(0)), node);
+            //Creating output
+            output.append(" expression=").append(result).append(";");
+            return result;
+        }));
         /*
          'if' command definition
          */
-        COMMANDS.put("if", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least two operand, process the 'if' command
-            if (node.getChildren().size() >= 2) {
-                String result = null;
-                //Creating an iterator over the list of arguments
-                Iterator<TclNode> iter = node.getChildren().iterator();
-                String expression = readOpNode(iter.next());
-                //Iterating until an exception is thrown
-                try {
-                    while (true) {
-                        result = readOpNode(iter.next());
-                        //If the condition is true return the first expression
-                        //In other case read and return the last expression or if 'elseif' go to the next iteration
-                        if (readBooleanString(expression) == 1) {
-                            //If the next argument is equel to 'then', then go to the next argument
-                            if (result.toLowerCase().equals("then")) {
-                                result = readOpNode(iter.next());
-                            }
-                            output.append(" if=then: ").append(result).append(";\n");
-                            return result;
-                        } else {
-                            //If the next argument is equel to 'then', then iterate over to the next argument
-                            if (result.toLowerCase().equals("then")) {
-                                iter.next();
-                            }
+        COMMANDS.put("if", new GenericTclCommand("if", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String result = null;
+            //Creating an iterator over the list of arguments
+            Iterator<TclNode> iter = node.getChildren().iterator();
+            String expression = evaluateExpression(readOpNode(iter.next()), node);
+            //Iterating until an exception is thrown
+            try {
+                while (true) {
+                    result = readOpNode(iter.next());
+                    //If the condition is true return the first expression
+                    //In other case read and return the last expression or if 'elseif' go to the next iteration
+                    if (readBooleanString(expression) == 1) {
+                        //If the next argument is equel to 'then', then go to the next argument
+                        if (result.toLowerCase().equals("then")) {
                             result = readOpNode(iter.next());
-                            switch (result.toLowerCase()) {
-                                case "elseif":
-                                    expression = readOpNode(iter.next());
-                                    break;
-                                case "else":
-                                    result = readOpNode(iter.next());
-                                default:
-                                    output.append(" if=else: ").append(result).append(";\n");
-                                    return result;
-                            }
+                        }
+                        output.append(" if=then: ").append(result).append(";\n");
+                        return result;
+                    } else {
+                        //If the next argument is equel to 'then', then iterate over to the next argument
+                        if (result.toLowerCase().equals("then")) {
+                            iter.next();
+                        }
+                        result = readOpNode(iter.next());
+                        switch (result.toLowerCase()) {
+                            case "elseif":
+                                expression = readOpNode(iter.next());
+                                break;
+                            case "else":
+                                result = readOpNode(iter.next());
+                            default:
+                                output.append(" if=else: ").append(result).append(";\n");
+                                return result;
                         }
                     }
-                } catch (NoSuchElementException ex) {
-                    output.append(" if=").append(result).append(";\n");
-                    return result;
                 }
-            } else {
-                //In less tha two operands, throw an error
-                throw new TclExecutionException("'if' command must have at least two argument!", node);
+            } catch (NoSuchElementException ex) {
+                output.append(" if=").append(result).append(";\n");
+                return result;
             }
-        });
+        }));
+
+        /*
+         'for' command definition
+         */
+        COMMANDS.put("for", new GenericTclCommand("for", 4, (TclCommand<TclNode, String>) (TclNode node) -> {
+            TclNode exprNode;
+            //Reading, parsing and interprerting the first expression
+            try {
+                exprNode = new TclStringParser(new TclStringLexer(readOpNode(node.getChildren().get(0)))).parse();
+            } catch (AbstractTclParser.TclParserError ex) {
+                throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command first expression!", node);
+            }
+            readOpNode(exprNode);
+            //Reading the condition string
+            String conString = readOpNode(node.getChildren().get(1));
+            //Reading the final expression string
+            String finalString = readOpNode(node.getChildren().get(2));
+            //Reading the cycle body string
+            String action = readOpNode(node.getChildren().get(3));
+            //Result
+            String result = null;
+            //The first evaluation of the conditional expression
+            String condition = evaluateExpression(conString, node);
+            //The main cycle
+            while (readBooleanString(condition) == 1) {
+                //Submitting the 'for' command body to a TclStringParser for substitution
+                try {
+                    exprNode = new TclStringParser(new TclStringLexer(action)).parse();
+                } catch (AbstractTclParser.TclParserError ex) {
+                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command body!", node);
+                }
+                //Evaluating the body of the cycle
+                result = readOpNode(exprNode);
+                //Submitting the 'for' command final expression to a TclStringParser for substitution
+                try {
+                    exprNode = new TclStringParser(new TclStringLexer(finalString)).parse();
+                } catch (AbstractTclParser.TclParserError ex) {
+                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command final expression!", node);
+                }
+                //Evaluating the final expression of the cycle
+                readOpNode(exprNode);
+                //Evaluating the conditional expression
+                condition = evaluateExpression(conString, node);
+            }
+            //Writing the body evaluation condition as the output
+            output.append(" 'for' expression=").append(result).append(";\n");
+            return result;
+        }));
 
         /*
          'while' cycle command definition
          */
-        COMMANDS.put("while", (TclCommand<TclNode, String>) (TclNode node) -> {
-            //If at least two operand, process the 'while' cycle
-            if (node.getChildren().size() >= 2) {
-                //Reading the conditional string and the cycle body
-                String conString = readOpNode(node.getChildren().get(0));
-                String action = readOpNode(node.getChildren().get(1));
-                //Result
-                String result = null;
-                //The first evaluation of the conditional expression
-                String condition = evaluateExpression(conString, node);
-                TclNode exprNode;
-                while (readBooleanString(condition) == 1) {
-                    //Submitting the 'while' command body to a TclStringParser for substitution
-                    try {
-                        exprNode = new TclStringParser(new TclStringLexer(action)).parse();
-                    } catch (AbstractTclParser.TclParserError ex) {
-                        throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'while' command body!", node);
-                    }
-                    //Evaluating the body of the cycle
-                    result = readOpNode(exprNode);
-                    //Evaluating the first operand as a conditional expression
-                    condition = evaluateExpression(conString, node);
+        COMMANDS.put("while", new GenericTclCommand("while", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            TclNode exprNode;
+            //Reading the conditional string and the cycle body
+            String conString = readOpNode(node.getChildren().get(0));
+            String action = readOpNode(node.getChildren().get(1));
+            //Result
+            String result = null;
+            //The first evaluation of the conditional expression
+            String condition = evaluateExpression(conString, node);
+            //The main cycle
+            while (readBooleanString(condition) == 1) {
+                //Submitting the 'while' command body to a TclStringParser for substitution
+                try {
+                    exprNode = new TclStringParser(new TclStringLexer(action)).parse();
+                } catch (AbstractTclParser.TclParserError ex) {
+                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'while' command body!", node);
                 }
-                //Writing the body evaluation condition as the output
-                output.append(" 'while' expression=").append(action).append(";\n");
-                return result;
-            } else {
-                //In less than two operands, throw an error
-                throw new TclExecutionException("'while command must have at least two argument!", node);
+                //Evaluating the body of the cycle
+                result = readOpNode(exprNode);
+                //Evaluating the first operand as a conditional expression
+                condition = evaluateExpression(conString, node);
             }
-        });
+            //Writing the body evaluation condition as the output
+            output.append(" 'while' expression=").append(result).append(";\n");
+            return result;
+        }));
     }
 
     /**

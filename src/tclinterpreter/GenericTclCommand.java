@@ -27,15 +27,59 @@ public class GenericTclCommand {
     /**
      * Tcl command body
      */
-    protected TclCommand command;
+    protected TclCommand<TclNode, String> command;
 
     /**
      * Minimal number of argument
      */
     protected int argNumber = 1;
-    
+
     /**
      * Command name
      */
     protected String name;
+
+    /**
+     * Constructor
+     *
+     * @param name
+     * @param argNumber
+     * @param command
+     */
+    public GenericTclCommand(String name, int argNumber, TclCommand command) {
+        this.name = name;
+        this.argNumber = argNumber;
+        this.command = command;
+    }
+
+    /**
+     * Returning name
+     *
+     * @return
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Applying command and checking that the correct number of arguments is
+     * present
+     *
+     * @param node
+     * @return
+     * @throws AbstractTclInterpreter.TclExecutionException
+     */
+    public String apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
+        if (command == null) {
+            return null;
+        }
+        //If at least argNumber operand, process the 'while' cycle
+        if (node.getChildren().size() >= argNumber) {
+            return command.apply(node);
+        } else {
+            //In less than argNumber operands, throw an error
+            throw new AbstractTclInterpreter.TclExecutionException(name
+                    + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", node);
+        }
+    }
 }
