@@ -79,9 +79,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'Set' command definition
          */
         COMMANDS.put("set", (TclCommand<TclNode, String>) (TclNode node) -> {
-            String value = null;
             //If at least operand is present, then execute the commnd
             if (node.getChildren().size() >= 1) {
+                String value = null;
                 String index = null;
                 String name = readOpNode(node.getChildren().get(0));
                 //Checking if the name is the variable of array id
@@ -99,8 +99,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         context.setArrayElement(name, index, value);
                         output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                     }
-                } else {
-                    //If only one opernad, read and return the variable or array element
+                } else //If only one opernad, read and return the variable or array element
+                {
                     if (index == null) {
                         value = context.getVaribale(name);
                         output.append(" ").append(name).append("=").append(value).append(";");
@@ -109,11 +109,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                     }
                 }
+                return value;
             } else {
                 //In no operands, throw an error
                 throw new TclExecutionException("'set' command must have at least one argument!", node);
             }
-            return value;
         });
 
         /*
@@ -169,26 +169,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("expr", (TclCommand<TclNode, String>) (TclNode node) -> {
             //If at least one operand, interprert the it as an expression
             if (node.getChildren().size() >= 1) {
-                //Reading the expression after all allowed substitutions
-                String expr = readOpNode(node.getChildren().get(0));
+                //Reading the expression after all substitutions
+                String result = readOpNode(node.getChildren().get(0));
                 //The second round of substitutions
-                TclNode exprNode = null;
-                try {
-                    exprNode = new TclStringParser(new TclStringLexer(expr)).parse();
-                } catch (AbstractTclParser.TclParserError ex) {
-                    Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                //Interpreting the expression
-                TclExpressionInterpreter inter = new TclExpressionInterpreter(
-                        new TclExpressionParser(new TclExpressionLexer(readOpNode(exprNode))));
-                String result = null;
-                try {
-                    result = inter.run();
-                } catch (AbstractTclParser.TclParserError ex) {
-                    Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (AbstractTclInterpreter.TclExecutionException ex) {
-                    Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                result = evaluateExpression(result, node);
+                //Creating output
                 output.append(" expression=").append(result).append(";");
                 return result;
             } else {
@@ -201,9 +186,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'if' command definition
          */
         COMMANDS.put("if", (TclCommand<TclNode, String>) (TclNode node) -> {
-            String result = null;
-            //If at least otwo operand, process the 'if' command
+            //If at least two operand, process the 'if' command
             if (node.getChildren().size() >= 2) {
+                String result = null;
                 //Creating an iterator over the list of arguments
                 Iterator<TclNode> iter = node.getChildren().iterator();
                 String expression = readOpNode(iter.next());
@@ -218,6 +203,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                             if (result.toLowerCase().equals("then")) {
                                 result = readOpNode(iter.next());
                             }
+                            output.append(" if=then: ").append(result).append(";\n");
                             return result;
                         } else {
                             //If the next argument is equel to 'then', then iterate over to the next argument
@@ -232,16 +218,53 @@ public class TclInterpreter extends AbstractTclInterpreter {
                                 case "else":
                                     result = readOpNode(iter.next());
                                 default:
+                                    output.append(" if=else: ").append(result).append(";\n");
                                     return result;
                             }
                         }
                     }
                 } catch (NoSuchElementException ex) {
+                    output.append(" if=").append(result).append(";\n");
                     return result;
                 }
             } else {
-                //In no operands, throw an error
+                //In less tha two operands, throw an error
                 throw new TclExecutionException("'if' command must have at least two argument!", node);
+            }
+        });
+
+        /*
+         'while' cycle command definition
+         */
+        COMMANDS.put("while", (TclCommand<TclNode, String>) (TclNode node) -> {
+            //If at least two operand, process the 'while' cycle
+            if (node.getChildren().size() >= 2) {
+                //Reading the conditional string and the cycle body
+                String conString = readOpNode(node.getChildren().get(0));
+                String action = readOpNode(node.getChildren().get(1));
+                //Result
+                String result = null;
+                //The first evaluation of the conditional expression
+                String condition = evaluateExpression(conString, node);
+                TclNode exprNode;
+                while (readBooleanString(condition) == 1) {
+                    //Submitting the 'while' command body to a TclStringParser for substitution
+                    try {
+                        exprNode = new TclStringParser(new TclStringLexer(action)).parse();
+                    } catch (AbstractTclParser.TclParserError ex) {
+                        throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'while' command body!", node);
+                    }
+                    //Evaluating the body of the cycle
+                    result = readOpNode(exprNode);
+                    //Evaluating the first operand as a conditional expression
+                    condition = evaluateExpression(conString, node);
+                }
+                //Writing the body evaluation condition as the output
+                output.append(" 'while' expression=").append(action).append(";\n");
+                return result;
+            } else {
+                //In less than two operands, throw an error
+                throw new TclExecutionException("'while command must have at least two argument!", node);
             }
         });
     }
@@ -250,7 +273,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * Executing a Tcl command
      *
      * @param command
-     * @return the result of a command
+     * @return the condition of a command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected String executeCommand(TclNode command) throws TclExecutionException {
@@ -349,10 +372,38 @@ public class TclInterpreter extends AbstractTclInterpreter {
     }
 
     /**
+     * A method that evaluates Tcl expressions
+     *
+     * @param expr expression string
+     * @param node Tcl node where the expression is found
+     * @return
+     * @throws TclExecutionException
+     */
+    protected String evaluateExpression(String expr, TclNode node) throws TclExecutionException {
+        TclNode exprNode;
+        String result;
+        //First submit the expression ot a TclStringParser for substitution
+        try {
+            exprNode = new TclStringParser(new TclStringLexer(expr)).parse();
+        } catch (AbstractTclParser.TclParserError ex) {
+            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression!", node);
+        }
+        //Interpreting the expression
+        TclExpressionInterpreter inter = new TclExpressionInterpreter(
+                new TclExpressionParser(new TclExpressionLexer(readOpNode(exprNode))));
+        try {
+            result = inter.run();
+        } catch (AbstractTclParser.TclParserError ex) {
+            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression!", node);
+        }
+        return result;
+    }
+
+    /**
      * Executing a sequence of commands
      *
      * @param program node
-     * @return the result of the last command
+     * @return the condition of the last command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected String executeProgram(TclNode program) throws TclExecutionException {

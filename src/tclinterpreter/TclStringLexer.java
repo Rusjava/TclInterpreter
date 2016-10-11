@@ -34,7 +34,8 @@ public class TclStringLexer extends AbstractTclLexer {
     }
 
     /**
-     * Reading alphanumerical names (with possible index in parentheses) from the script
+     * Reading alphanumerical names (with possible index in parentheses) from
+     * the script
      *
      * @return
      */
@@ -88,10 +89,18 @@ public class TclStringLexer extends AbstractTclLexer {
      */
     protected String readCommandString() {
         StringBuilder string = new StringBuilder("");
-        while (currentchar != ']' && currentchar != 0) {
+        //Counter of nested brackets
+        int counter = 1;
+        do {
             string.append(currentchar);
             advancePosition();
-        }
+            //Icreamenting or decreamenting the nested bracket counter
+            if (currentchar == '[') {
+                counter++;
+            } else if (currentchar == ']') {
+                counter--;
+            }
+        } while (counter > 0 && currentchar != 0);
         return string.toString();
     }
 
