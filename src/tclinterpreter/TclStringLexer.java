@@ -42,22 +42,22 @@ public class TclStringLexer extends AbstractTclLexer {
     protected String readName() {
         StringBuilder name = new StringBuilder("");
         int counter = 0; //Parentheses counter
-        while ((Character.isDigit(currentchar)
-                || Character.isLetter(currentchar)
-                || currentchar == '_'
-                || currentchar == '('
-                || (currentchar == ')' && counter != 0)
-                || currentchar == '\\') && currentchar != 0) {
-            if (currentchar == '\\') {
+        while ((Character.isDigit(getCurrentchar())
+                || Character.isLetter(getCurrentchar())
+                || getCurrentchar() == '_'
+                || getCurrentchar() == '('
+                || (getCurrentchar() == ')' && counter != 0)
+                || getCurrentchar() == '\\') && getCurrentchar() != 0) {
+            if (getCurrentchar() == '\\') {
                 name.append(replaceSymbol());
             } else {
                 //Incrementing or decrementing parentheses counter
-                if (currentchar == '(') {
+                if (getCurrentchar() == '(') {
                     counter++;
-                } else if (currentchar == ')') {
+                } else if (getCurrentchar() == ')') {
                     counter--;
                 }
-                name.append(currentchar);
+                name.append(getCurrentchar());
                 advancePosition();
             }
         }
@@ -71,11 +71,11 @@ public class TclStringLexer extends AbstractTclLexer {
      */
     protected String readSubString() {
         StringBuilder string = new StringBuilder();
-        while (currentchar != '[' && currentchar != 0 && currentchar != '$' && currentchar != 0) {
-            if (currentchar == '\\') {
+        while (getCurrentchar() != '[' && getCurrentchar() != 0 && getCurrentchar() != '$' && getCurrentchar() != 0) {
+            if (getCurrentchar() == '\\') {
                 string.append(replaceSymbol());
             } else {
-                string.append(currentchar);
+                string.append(getCurrentchar());
                 advancePosition();
             }
         }
@@ -92,15 +92,15 @@ public class TclStringLexer extends AbstractTclLexer {
         //Counter of nested brackets
         int counter = 1;
         do {
-            string.append(currentchar);
+            string.append(getCurrentchar());
             advancePosition();
             //Icreamenting or decreamenting the nested bracket counter
-            if (currentchar == '[') {
+            if (getCurrentchar() == '[') {
                 counter++;
-            } else if (currentchar == ']') {
+            } else if (getCurrentchar() == ']') {
                 counter--;
             }
-        } while (counter > 0 && currentchar != 0);
+        } while (counter > 0 && getCurrentchar() != 0);
         return string.toString();
     }
 
@@ -109,25 +109,25 @@ public class TclStringLexer extends AbstractTclLexer {
         /*
          What is the next token
          */
-        if (currentchar == '[') {
+        if (getCurrentchar() == '[') {
             /*
              Reading the beginning of the command substitutiion
              */
             advancePosition();
             return new TclToken(TclTokenType.LEFTBR);
-        } else if (currentchar == ']') {
+        } else if (getCurrentchar() == ']') {
             /*
              Reading the end of the command substitutiion
              */
             advancePosition();
             return new TclToken(TclTokenType.RIGHTBR);
-        } else if (currentchar == '$') {
+        } else if (getCurrentchar() == '$') {
             /*
              Reading the beginning of the variable substitutiion
              */
             advancePosition();
             return new TclToken(TclTokenType.DOLLAR);
-        } else if ((currentchar == '_' || Character.isLetter(currentchar))
+        } else if ((getCurrentchar() == '_' || Character.isLetter(getCurrentchar()))
                 && peekback() == '$') {
             /*
              Returning a name token

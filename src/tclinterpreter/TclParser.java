@@ -59,15 +59,18 @@ public class TclParser extends AbstractTclParser {
         TclNode operand = null;
         try {
             /*
-            Any should begin with a word with a possible leading whitespace
+             Any should begin with a word with a possible leading whitespace
              */
-            advanceToken(TclTokenType.WORD, TclTokenType.WHITESPACE, TclTokenType.EOL);
+            advanceToken(TclTokenType.WORD, TclTokenType.WHITESPACE, TclTokenType.EOL, TclTokenType.CMT);
+            if (currenttoken.type != TclTokenType.WORD) {
+                advanceToken(TclTokenType.WORD, TclTokenType.CMT);
+            }
             if (currenttoken.type != TclTokenType.WORD) {
                 advanceToken(TclTokenType.WORD);
             }
             node.setValue(currenttoken.getValue());
             /*
-            There should be a whitespace after the command name
+             There should be a whitespace after the command name
              */
             advanceToken(TclTokenType.WHITESPACE);
             /**
@@ -150,6 +153,9 @@ public class TclParser extends AbstractTclParser {
                                 operand.getChildren().add(new TclNode(TclNodeType.SUBSTRING).
                                         setValue(""));
                             }
+                            break;
+                        case CMT:
+                            System.out.println(currenttoken);
                             break;
                         default:
                             throw innererror;

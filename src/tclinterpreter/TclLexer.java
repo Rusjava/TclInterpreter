@@ -71,27 +71,22 @@ public class TclLexer extends AbstractTclLexer {
     protected String readName() {
         StringBuilder name = new StringBuilder("");
         int counter = 0; //Parentheses counter
-        while ((Character.isDigit(currentchar)
-                || Character.isLetter(currentchar)
-                || currentchar == '_'
-                || currentchar == '('
-                || (currentchar == ')' && counter > 0))
-                && currentchar != 0) {
-            if (currentchar == '\\') {
-                if (peek() == '\n' || peek() == '\r') {
-                    advancePosition();
-                    skipEOL();
-                } else {
-                    name.append(replaceSymbol());
-                }
+        while ((Character.isDigit(getCurrentchar())
+                || Character.isLetter(getCurrentchar())
+                || getCurrentchar() == '_'
+                || getCurrentchar() == '('
+                || (getCurrentchar() == ')' && counter > 0))
+                && getCurrentchar() != 0) {
+            if (getCurrentchar() == '\\') {
+                name.append(replaceSymbol());
             } else {
                 //Incrementing or decrementing parentheses counter
-                if (currentchar == '(') {
+                if (getCurrentchar() == '(') {
                     counter++;
-                } else if (currentchar == ')') {
+                } else if (getCurrentchar() == ')') {
                     counter--;
                 }
-                name.append(currentchar);
+                name.append(getCurrentchar());
                 advancePosition();
             }
         }
@@ -105,17 +100,12 @@ public class TclLexer extends AbstractTclLexer {
      */
     protected String readWord() {
         StringBuilder name = new StringBuilder("");
-        while (!Character.isWhitespace(currentchar) && currentchar != '['
-                && currentchar != ';' && currentchar != '$' && currentchar != 0) {
-            if (currentchar == '\\') {
-                if (peek() == '\n' || peek() == '\r') {
-                    advancePosition();
-                    skipEOL();
-                } else {
-                    name.append(replaceSymbol());
-                }
+        while (!Character.isWhitespace(getCurrentchar()) && getCurrentchar() != '['
+                && getCurrentchar() != ';' && getCurrentchar() != '$' && getCurrentchar() != 0) {
+            if (getCurrentchar() == '\\') {
+                name.append(replaceSymbol());
             } else {
-                name.append(currentchar);
+                name.append(getCurrentchar());
                 advancePosition();
             }
         }
@@ -132,22 +122,31 @@ public class TclLexer extends AbstractTclLexer {
     protected String readString(char endchar) {
         StringBuilder string = new StringBuilder("");
         int counter = 1;
-        while (counter > 0 && currentchar != 0) {
-            if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
-                advancePosition();
-                skipEOL();
-            } else {
-                if (currentchar == endchar && endchar != MIRRORMAP.get(endchar)) {
-                    counter++;
-                }
-                if (currentchar == MIRRORMAP.get(endchar)) {
-                    counter--;
-                }
-                if (counter != 0) {
-                    string.append(currentchar);
-                    advancePosition();
-                }
+        while (counter > 0 && getCurrentchar() != 0) {
+            if (getCurrentchar() == endchar && endchar != MIRRORMAP.get(endchar)) {
+                counter++;
             }
+            if (getCurrentchar() == MIRRORMAP.get(endchar)) {
+                counter--;
+            }
+            if (counter != 0) {
+                string.append(getCurrentchar());
+                advancePosition();
+            }
+        }
+        return string.toString();
+    }
+    
+    /**
+     * Reading a Tcl comment
+     * 
+     * @return
+     */
+    protected String readComment () {
+        StringBuilder string = new StringBuilder("");
+        while (getCurrentchar() != '\n' && getCurrentchar() != '\r' && getCurrentchar() != 0) {
+            string.append(getCurrentchar());
+            advancePosition();
         }
         return string.toString();
     }
@@ -157,86 +156,92 @@ public class TclLexer extends AbstractTclLexer {
         /*
          What is the next token
          */
-        if ((peekback() == '"' && qflag)
+        if (getCurrentchar() == '#' ) {
+            /*
+            Returning a comment token
+            */
+            advancePosition();
+            return new TclToken(TclTokenType.CMT).setValue(readComment());
+        } else if ((peekback() == '"' && qflag)
                 || peekback() == '{' || peekback() == '[' || peekback() == '(') {
             /*
              Reading and returning a string of symbols
              */
             return new TclToken(TclTokenType.STRING).setValue(readString(peekback()));
-        } else if (currentchar == '{' && Character.isWhitespace(peekback())) {
+        } else if (getCurrentchar() == '{' && Character.isWhitespace(peekback())) {
             /*
              Returning a left brace token
              */
             curlyflag = true;
             advancePosition();
             return new TclToken(TclTokenType.LEFTCURL);
-        } else if (currentchar == '}' && curlyflag) {
+        } else if (getCurrentchar() == '}' && curlyflag) {
             /*
              Returning a right brace token
              */
             curlyflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTCURL);
-        } else if (currentchar == '"' && !qflag && Character.isWhitespace(peekback())) {
+        } else if (getCurrentchar() == '"' && !qflag && Character.isWhitespace(peekback())) {
             /*
              Returning a left quote token
              */
             qflag = true;
             advancePosition();
             return new TclToken(TclTokenType.LEFTQ);
-        } else if (currentchar == '"' && qflag) {
+        } else if (getCurrentchar() == '"' && qflag) {
             /*
              Returning a right quote token
              */
             qflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTQ);
-        } else if (currentchar == ';') {
+        } else if (getCurrentchar() == ';') {
             /*
              Returning a semi-colon token
              */
             advancePosition();
             return new TclToken(TclTokenType.SEMI);
-        } else if (currentchar == '\n' || currentchar == '\r') {
+        } else if (getCurrentchar() == '\n' || getCurrentchar() == '\r') {
             /*
              Returning an end of line token
              */
-            skipEOL();
+            skipWhitespace();
             return new TclToken(TclTokenType.EOL);
-        } else if (Character.isWhitespace(currentchar)) {
+        } else if (Character.isWhitespace(getCurrentchar())) {
             /*
              Skipping whitespace and returning a whitespace token
              */
             skipWhitespace();
             return new TclToken(TclTokenType.WHITESPACE);
-        } else if (currentchar == '[') {
+        } else if (getCurrentchar() == '[') {
             /*
              Returning a left bracket token
              */
             brflag = true;
             advancePosition();
             return new TclToken(TclTokenType.LEFTBR);
-        } else if (currentchar == ']') {
+        } else if (getCurrentchar() == ']') {
             /*
              Returning a right bracket token
              */
             brflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTBR);
-        } else if (currentchar == '$') {
+        } else if (getCurrentchar() == '$') {
             /*
              Returning a dollar token
              */
             advancePosition();
             return new TclToken(TclTokenType.DOLLAR);
-        } else if ((currentchar == '_' || Character.isLetter(currentchar))
+        } else if ((getCurrentchar() == '_' || Character.isLetter(getCurrentchar()))
                 && peekback() == '$') {
             /*
              Returning a name token
              */
             return new TclToken(TclTokenType.NAME).setValue(readName());
-        } else if ((currentchar == '_' || currentchar == '\\'
-                || Character.isDigit(currentchar) || Character.isLetter(currentchar))) {
+        } else if ((getCurrentchar() == '_' || getCurrentchar() == '\\'
+                || Character.isDigit(getCurrentchar()) || Character.isLetter(getCurrentchar()))) {
             /*
              Returning a Tclword token
              */

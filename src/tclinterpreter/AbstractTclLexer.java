@@ -38,22 +38,19 @@ public abstract class AbstractTclLexer extends AbstractBasicTclLexer {
     public TclToken getToken() {
         TclToken nexttoken;
         /*
-         Skipping any leading escaped end of line or any whitespace (if allowed)
+         Skipping any leading whitespace (if allowed)
          */
-        if (currentchar == '\\' && (peek() == '\n' || peek() == '\r')) {
-            advancePosition();
-            skipEOL();
-        } else if (Character.isWhitespace(currentchar) && skipWhitespace) {
+        if (Character.isWhitespace(getCurrentchar()) && isSkipWhitespace()) {
             skipWhitespace();
         }
         /*
          Returning an end of file token if end of file is reached
          */
-        if (currentchar == 0) {
+        if (getCurrentchar() == 0) {
             return new TclToken(TclTokenType.EOF);
         }
         /*
-        Get a custom token according to a subclass
+         Get a custom token according to a subclass
          */
         nexttoken = getCustomToken();
         /*

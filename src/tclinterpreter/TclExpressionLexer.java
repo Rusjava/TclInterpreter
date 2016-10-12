@@ -44,7 +44,7 @@ public class TclExpressionLexer extends AbstractTclLexer {
         /*
         If this is an octal number?
          */
-        if (currentchar == '0' && Character.isDigit(peek())) {
+        if (getCurrentchar() == '0' && Character.isDigit(peek())) {
             String oNumber = readOctalNumber();
             advancePosition();
             return oNumber;
@@ -52,7 +52,7 @@ public class TclExpressionLexer extends AbstractTclLexer {
         /*
         If this is an hex number?
          */
-        if (currentchar == '0' && peek() == 'x') {
+        if (getCurrentchar() == '0' && peek() == 'x') {
             advancePosition();
             String hNumber = readHexNumber();
             advancePosition();
@@ -62,14 +62,14 @@ public class TclExpressionLexer extends AbstractTclLexer {
         /*
          This is a number if didgit, dot and exponetial characters are present     
          */
-        while (Character.isDigit(currentchar)
-                || currentchar == '.'
-                || (Character.toLowerCase(currentchar) == 'e'
+        while (Character.isDigit(getCurrentchar())
+                || getCurrentchar() == '.'
+                || (Character.toLowerCase(getCurrentchar()) == 'e'
                 && ((peek() == '-') || peek() == '+'))) {
-            number.append(currentchar);
+            number.append(getCurrentchar());
             advancePosition();
             if (Character.toLowerCase(peekback()) == 'e') {
-                number.append(currentchar);
+                number.append(getCurrentchar());
                 advancePosition();
             }
         }
@@ -83,8 +83,8 @@ public class TclExpressionLexer extends AbstractTclLexer {
      */
     protected String readString() {
         StringBuilder string = new StringBuilder("");
-        while (currentchar != '"' && currentchar != 0) {
-            string.append(currentchar);
+        while (getCurrentchar() != '"' && getCurrentchar() != 0) {
+            string.append(getCurrentchar());
             advancePosition();
         }
         return string.toString();
@@ -98,192 +98,192 @@ public class TclExpressionLexer extends AbstractTclLexer {
              Reading and returning a string of symbols
              */
             return new TclToken(TclTokenType.STRING).setValue(readString());
-        } else if (Character.isDigit(currentchar)) {
+        } else if (Character.isDigit(getCurrentchar())) {
             /*
              Returning a real number token
              */
             return new TclToken(TclTokenType.NUMBER).setValue(readNumber());
-        } else if (currentchar == '+') {
+        } else if (getCurrentchar() == '+') {
             /*
              Returning a plus op token
              */
             advancePosition();
             return new TclToken(TclTokenType.PLUS);
-        } else if (currentchar == '-') {
+        } else if (getCurrentchar() == '-') {
             /*
              Returning a minus op token
              */
             advancePosition();
             return new TclToken(TclTokenType.MINUS);
-        } else if (currentchar == '~') {
+        } else if (getCurrentchar() == '~') {
             /*
              Returning a minus op token
              */
             advancePosition();
             return new TclToken(TclTokenType.BNOT);
-        } else if (currentchar == '!') {
+        } else if (getCurrentchar() == '!') {
             /*
              Returning a minus op token
              */
             advancePosition();
             return new TclToken(TclTokenType.NOT);
-        } else if (currentchar == '*' && peek() == '*') {
+        } else if (getCurrentchar() == '*' && peek() == '*') {
             /*
              Returning an exp op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.EXP);
-        } else if (currentchar == '*') {
+        } else if (getCurrentchar() == '*') {
             /*
              Returning a multiplication op token
              */
             advancePosition();
             return new TclToken(TclTokenType.MUL);
-        } else if (currentchar == '<' && peek() == '<') {
+        } else if (getCurrentchar() == '<' && peek() == '<') {
             /*
              Returning a left shift op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.LSHIFT);
-        } else if (currentchar == '<' && peek() == '=') {
+        } else if (getCurrentchar() == '<' && peek() == '=') {
             /*
              Returning a less or equal op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.LEQ);
-        } else if (currentchar == '<') {
+        } else if (getCurrentchar() == '<') {
             /*
              Returning a less op token
              */
             advancePosition();
             return new TclToken(TclTokenType.LESS);
-        } else if (currentchar == '>' && peek() == '>') {
+        } else if (getCurrentchar() == '>' && peek() == '>') {
             /*
              Returning a righr shift op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.RSHIFT);
-        } else if (currentchar == '>' && peek() == '=') {
+        } else if (getCurrentchar() == '>' && peek() == '=') {
             /*
              Returning a more or equal op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.MEQ);
-        } else if (currentchar == '>') {
+        } else if (getCurrentchar() == '>') {
             /*
              Returning a more op token
              */
             advancePosition();
             return new TclToken(TclTokenType.MORE);
-        } else if (currentchar == '/') {
+        } else if (getCurrentchar() == '/') {
             /*
              Returning a division op token
              */
             advancePosition();
             return new TclToken(TclTokenType.DIV);
-        } else if (currentchar == '%') {
+        } else if (getCurrentchar() == '%') {
             /*
              Returning a remainder op token
              */
             advancePosition();
             return new TclToken(TclTokenType.REM);
-        } else if (currentchar == 'e' && peek() == 'q') {
+        } else if (getCurrentchar() == 'e' && peek() == 'q') {
             /*
              Returning a string equality op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.EQ);
-        } else if (currentchar == 'n' && peek() == 'e') {
+        } else if (getCurrentchar() == 'n' && peek() == 'e') {
             /*
              Returning a string non-equality op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.NE);
-        } else if (currentchar == 'i' && peek() == 'n') {
+        } else if (getCurrentchar() == 'i' && peek() == 'n') {
             /*
              Returning a string in list op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.IN);
-        } else if (currentchar == 'n' && peek() == 'i') {
+        } else if (getCurrentchar() == 'n' && peek() == 'i') {
             /*
              Returning a string not in list op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.NI);
-        } else if (currentchar == '&' && peek() == '&') {
+        } else if (getCurrentchar() == '&' && peek() == '&') {
             /*
              Returning an AND op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.AND);
-        } else if (currentchar == '|' && peek() == '|') {
+        } else if (getCurrentchar() == '|' && peek() == '|') {
             /*
              Returning an OR op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.OR);
-        } else if (currentchar == '&') {
+        } else if (getCurrentchar() == '&') {
             /*
              Returning a bit AND op token
              */
             advancePosition();
             return new TclToken(TclTokenType.BAND);
-        } else if (currentchar == '^') {
+        } else if (getCurrentchar() == '^') {
             /*
              Returning a bit XOR op token
              */
             advancePosition();
             return new TclToken(TclTokenType.BXOR);
-        } else if (currentchar == '|') {
+        } else if (getCurrentchar() == '|') {
             /*
              Returning a bit OR op token
              */
             advancePosition();
             return new TclToken(TclTokenType.BOR);
-        } else if (currentchar == '?') {
+        } else if (getCurrentchar() == '?') {
             /*
              Returning a question mark token
              */
             advancePosition();
             return new TclToken(TclTokenType.QM);
-        } else if (currentchar == ':') {
+        } else if (getCurrentchar() == ':') {
             /*
              Returning a colon token
              */
             advancePosition();
             return new TclToken(TclTokenType.COLON);
-        } else if (currentchar == '(') {
+        } else if (getCurrentchar() == '(') {
             /*
              Returning a left paranthesis op token
              */
             advancePosition();
             return new TclToken(TclTokenType.LEFTPAR);
-        } else if (currentchar == ')') {
+        } else if (getCurrentchar() == ')') {
             /*
              Returning a right paranthesis op token
              */
             advancePosition();
             return new TclToken(TclTokenType.RIGHTPAR);
-        } else if (currentchar == '"' && !qflag) {
+        } else if (getCurrentchar() == '"' && !qflag) {
             /*
              Returning a left quote token
              */
             qflag = true;
             advancePosition();
             return new TclToken(TclTokenType.LEFTQ);
-        } else if (currentchar == '"' && qflag) {
+        } else if (getCurrentchar() == '"' && qflag) {
             /*
              Returning a right quote token
              */

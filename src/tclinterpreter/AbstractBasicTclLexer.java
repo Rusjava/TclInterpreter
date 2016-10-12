@@ -14,33 +14,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package tclinterpreter;
 
 /**
  * Basic abstract class for Tcl lexers
- * 
+ *
  * @author Ruslan Feshchenko
  * @version 0.1
  */
 public abstract class AbstractBasicTclLexer {
-    
+
     /**
      * TCL script
      */
-    protected String script = null;
+    private String script = null;
     /**
      * Current position in script
      */
-    protected int pos = 0;
+    private int pos = 0;
     /**
      * Current symbol at position of pos
      */
-    protected char currentchar = 0;
+    private char currentchar = 0;
+    /**
+     * Next symbol at position of pos+1
+     */
+    private char nextchar = 0;
+    /**
+     * Previous symbol at position of pos-1
+     */
+    private char previouschar = 0;
     /**
      * A flag indicating if whitespace shall be ignored
      */
-    protected boolean skipWhitespace;
+    private final boolean skipWhitespace;
 
     /**
      * A general constructor of parsers
@@ -50,20 +57,41 @@ public abstract class AbstractBasicTclLexer {
      */
     public AbstractBasicTclLexer(String script, boolean skipWhitespace) {
         this.script = script;
+        //If the string has at least one symbol, read it as the current char
         if (script.length() > 0) {
             currentchar = script.charAt(pos);
-        } else {
-            currentchar = 0;
+            //If the string has at least two symbols, read the second one as the next char
+            if (script.length() > 1) {
+                nextchar = script.charAt(pos + 1);
+                //Skipping any leading escaped end of line
+                if (currentchar == '\\' && (nextchar == '\n' || nextchar == '\r')) {
+                    advancePosition();
+                    skipEOL();
+                }
+            }
         }
         this.skipWhitespace = skipWhitespace;
     }
 
     /**
-     * Advance position by one
+     * Advancing position by one symbol, zero if no next symbol
      */
-    protected void advancePosition() {
+    protected final void advancePosition() {
         if (++pos < script.length()) {
-            currentchar = script.charAt(pos);
+            previouschar = currentchar;
+            currentchar = nextchar;
+            if (pos < script.length() - 1) {
+                nextchar = script.charAt(pos + 1);
+            } else {
+                nextchar = 0;
+            }
+            if (currentchar == '\\' && (nextchar == '\n' || nextchar == '\r')) {
+                char pchar = previouschar;
+                advancePosition();
+                skipEOL();
+                //Preserving the previous char
+                previouschar = pchar;
+            }
         } else {
             currentchar = 0;
         }
@@ -75,11 +103,7 @@ public abstract class AbstractBasicTclLexer {
      * @return the next character
      */
     protected char peek() {
-        if (pos < script.length() - 1) {
-            return script.charAt(pos + 1);
-        } else {
-            return 0;
-        }
+        return nextchar;
     }
 
     /**
@@ -88,11 +112,7 @@ public abstract class AbstractBasicTclLexer {
      * @return the previous character
      */
     protected char peekback() {
-        if (pos > 0) {
-            return script.charAt(pos - 1);
-        } else {
-            return 0;
-        }
+        return previouschar;
     }
 
     /**
@@ -115,9 +135,7 @@ public abstract class AbstractBasicTclLexer {
      * Skipping white space
      */
     protected void skipWhitespace() {
-        while (Character.isWhitespace(currentchar) && currentchar != 0) {
-            advancePosition();
-        }
+        skipEOL();
     }
 
     /**
@@ -220,8 +238,28 @@ public abstract class AbstractBasicTclLexer {
     /**
      * Skipping end of line and any whitespace after it
      */
-    protected void skipEOL() {
-        skipWhitespace();
+    private void skipEOL() {
+        while (Character.isWhitespace(currentchar) && currentchar != 0) {
+            advancePosition();
+        }
     }
-    
+
+    /**
+     * Returning the char at the current position
+     *
+     * @return currentchar
+     */
+    public char getCurrentchar() {
+        return currentchar;
+    }
+
+    /**
+     * Should any whitespace be skipped?
+     *
+     * @return skipWhitespace
+     */
+    public boolean isSkipWhitespace() {
+        return skipWhitespace;
+    }
+
 }
