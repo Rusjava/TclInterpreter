@@ -85,7 +85,7 @@ public class TclExpressionParser extends AbstractTclParser {
         /*
          * If it begins with a number, return it. If it begins with an opening paranthesis get the expression in paranthesis
          */
-        advanceToken(TclTokenType.NUMBER, TclTokenType.LEFTPAR,
+        advanceToken(TclTokenType.NUMBER, TclTokenType.NAME, TclTokenType.LEFTPAR,
                 TclTokenType.NOT, TclTokenType.BNOT, TclTokenType.PLUS, TclTokenType.MINUS, TclTokenType.LEFTQ);
         switch (currenttoken.type) {
             case LEFTQ:
@@ -102,7 +102,16 @@ public class TclExpressionParser extends AbstractTclParser {
                 checkRightParenthesis();
                 break;
             case NUMBER:
+                //A number
                 node = new TclNode(TclNodeType.NUMBER).setValue(currenttoken.getValue());
+                checkRightParenthesis();
+                break;
+            case NAME:
+                node = new TclNode(TclNodeType.FUNC).setValue(currenttoken.getValue());
+                //A function name should have an openning parantheses just after it
+                advanceToken(TclTokenType.LEFTPAR);
+                fnumber++; //Increasing number of folded parantheses
+                node.getChildren().add(getExpression());
                 checkRightParenthesis();
                 break;
             case LEFTPAR:
@@ -111,18 +120,22 @@ public class TclExpressionParser extends AbstractTclParser {
                 checkRightParenthesis();
                 break;
             case MINUS:
+                //Unary minus
                 node = new TclNode(TclNodeType.UNARYOP).setValue("-");
                 node.getChildren().add(getFactor());
                 break;
             case PLUS:
+                //Unary plus
                 node = new TclNode(TclNodeType.UNARYOP).setValue("+");
                 node.getChildren().add(getFactor());
                 break;
             case NOT:
+                //Negation
                 node = new TclNode(TclNodeType.UNARYOP).setValue("!");
                 node.getChildren().add(getFactor());
                 break;
             case BNOT:
+                //Binary negation
                 node = new TclNode(TclNodeType.UNARYOP).setValue("~");
                 node.getChildren().add(getFactor());
         }
@@ -142,8 +155,7 @@ public class TclExpressionParser extends AbstractTclParser {
                     && currenttoken.type != TclTokenType.EXP
                     && currenttoken.type != TclTokenType.QM
                     && currenttoken.type != TclTokenType.COLON
-                    && !OPSET.contains(currenttoken.type)
-                    && currenttoken.type != TclTokenType.RIGHTPAR)) {
+                    && !OPSET.contains(currenttoken.type))) {
                 throw error;
             }
         }

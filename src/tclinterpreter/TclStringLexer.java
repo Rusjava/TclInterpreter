@@ -140,7 +140,7 @@ public class TclStringLexer extends AbstractTclLexer {
             return new TclToken(TclTokenType.STRING).setValue(readCommandString());
         } else {
             /*
-             Reading and returning EOF
+             Reading and returning a substring
              */
             return new TclToken(TclTokenType.STRING).setValue(readSubString());
         }

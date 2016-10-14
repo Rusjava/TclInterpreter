@@ -17,12 +17,12 @@
 package tclinterpreter;
 
 /**
- * General class for Tcl commands
+ * General class for Tcl commands implementing TclCommand interface
  *
  * @author Ruslan Feshchenko
  * @version 0.1
  */
-public class GenericTclCommand {
+public class GenericTclCommand implements TclCommand<TclNode, String> {
 
     /**
      * Tcl command body
@@ -69,13 +69,19 @@ public class GenericTclCommand {
      * @return
      * @throws AbstractTclInterpreter.TclExecutionException
      */
+    @Override
     public String apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
         if (command == null) {
             return null;
         }
         //If at least argNumber operand, process the 'while' cycle
         if (node.getChildren().size() >= argNumber) {
-            return command.apply(node);
+            try {
+                return command.apply(node);
+            } catch (IndexOutOfBoundsException ex) {
+                throw new AbstractTclInterpreter.TclExecutionException("Insufficient number of operands in '"
+                        + name + "' command!", node);
+            }
         } else {
             //In less than argNumber operands, throw an error
             throw new AbstractTclInterpreter.TclExecutionException(name

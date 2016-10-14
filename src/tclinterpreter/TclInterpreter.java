@@ -17,6 +17,9 @@
 package tclinterpreter;
 
 import java.io.OutputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,9 +37,10 @@ import java.util.logging.Logger;
 public class TclInterpreter extends AbstractTclInterpreter {
 
     /**
-     * A map for Tcl keywords
+     * A map containing all Tcl commands
+     *
      */
-    public final Map<String, GenericTclCommand> COMMANDS = new HashMap<>();
+    public final Map<String, TclCommand<TclNode, String>> COMMANDS = new HashMap<>();
 
     /**
      * Constructor, which sets up the interpreter with an attached parser
@@ -96,15 +100,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
             } else //If only one opernad, read and return the variable or array element
-            {
-                if (index == null) {
+             if (index == null) {
                     value = context.getVaribale(name);
                     output.append(" ").append(name).append("=").append(value).append(";");
                 } else {
                     value = context.getArrayElement(name, index);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
-            }
             return value;
         }));
 
@@ -158,35 +160,35 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'if' command definition
          */
         COMMANDS.put("if", new GenericTclCommand("if", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
-            String result = null;
+            String result = null, intresult;
             //Creating an iterator over the list of arguments
             Iterator<TclNode> iter = node.getChildren().iterator();
             String expression = evaluateExpression(readOpNode(iter.next()), node);
             //Iterating until an exception is thrown
             try {
                 while (true) {
-                    result = readOpNode(iter.next());
+                    intresult = readOpNode(iter.next());
+                    //If the next argument is equel to 'then', then go to the next argument
+                    if (intresult.toLowerCase().equals("then")) {
+                        intresult = readOpNode(iter.next());
+                    }
                     //If the condition is true return the first expression
                     //In other case read and return the last expression or if 'elseif' go to the next iteration
                     if (readBooleanString(expression) == 1) {
-                        //If the next argument is equel to 'then', then go to the next argument
-                        if (result.toLowerCase().equals("then")) {
-                            result = readOpNode(iter.next());
-                        }
+                        //Parsing and interprerting the first body
+                        result = evaluateScript(intresult);
                         output.append(" if=then: ").append(result).append(";\n");
                         return result;
                     } else {
-                        //If the next argument is equel to 'then', then iterate over to the next argument
-                        if (result.toLowerCase().equals("then")) {
-                            iter.next();
-                        }
-                        result = readOpNode(iter.next());
-                        switch (result.toLowerCase()) {
+                        intresult = readOpNode(iter.next());
+                        switch (intresult.toLowerCase()) {
                             case "elseif":
-                                expression = readOpNode(iter.next());
+                                expression = evaluateExpression(readOpNode(iter.next()), node);
                                 break;
                             case "else":
-                                result = readOpNode(iter.next());
+                                //Reading, parsing and interprerting the second body
+                                intresult = readOpNode(iter.next());
+                                result = evaluateScript(intresult);
                             default:
                                 output.append(" if=else: ").append(result).append(";\n");
                                 return result;
@@ -203,14 +205,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'for' command definition
          */
         COMMANDS.put("for", new GenericTclCommand("for", 4, (TclCommand<TclNode, String>) (TclNode node) -> {
-            TclNode exprNode;
             //Reading, parsing and interprerting the first expression
-            try {
-                exprNode = new TclStringParser(new TclStringLexer(readOpNode(node.getChildren().get(0)))).parse();
-            } catch (AbstractTclParser.TclParserError ex) {
-                throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command first expression!", node);
-            }
-            readOpNode(exprNode);
+            evaluateScript(readOpNode(node.getChildren().get(0)));
             //Reading the condition string
             String conString = readOpNode(node.getChildren().get(1));
             //Reading the final expression string
@@ -223,22 +219,10 @@ public class TclInterpreter extends AbstractTclInterpreter {
             String condition = evaluateExpression(conString, node);
             //The main cycle
             while (readBooleanString(condition) == 1) {
-                //Submitting the 'for' command body to a TclStringParser for substitution
-                try {
-                    exprNode = new TclStringParser(new TclStringLexer(action)).parse();
-                } catch (AbstractTclParser.TclParserError ex) {
-                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command body!", node);
-                }
                 //Evaluating the body of the cycle
-                result = readOpNode(exprNode);
-                //Submitting the 'for' command final expression to a TclStringParser for substitution
-                try {
-                    exprNode = new TclStringParser(new TclStringLexer(finalString)).parse();
-                } catch (AbstractTclParser.TclParserError ex) {
-                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'for' command final expression!", node);
-                }
+                result = evaluateScript(action);
                 //Evaluating the final expression of the cycle
-                readOpNode(exprNode);
+                evaluateScript(finalString);
                 //Evaluating the conditional expression
                 condition = evaluateExpression(conString, node);
             }
@@ -251,7 +235,6 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'while' cycle command definition
          */
         COMMANDS.put("while", new GenericTclCommand("while", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
-            TclNode exprNode;
             //Reading the conditional string and the cycle body
             String conString = readOpNode(node.getChildren().get(0));
             String action = readOpNode(node.getChildren().get(1));
@@ -261,19 +244,52 @@ public class TclInterpreter extends AbstractTclInterpreter {
             String condition = evaluateExpression(conString, node);
             //The main cycle
             while (readBooleanString(condition) == 1) {
-                //Submitting the 'while' command body to a TclStringParser for substitution
-                try {
-                    exprNode = new TclStringParser(new TclStringLexer(action)).parse();
-                } catch (AbstractTclParser.TclParserError ex) {
-                    throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl 'while' command body!", node);
-                }
-                //Evaluating the body of the cycle
-                result = readOpNode(exprNode);
+                //Parsing and interprerting the cycle body
+                result = evaluateScript(action);
                 //Evaluating the first operand as a conditional expression
                 condition = evaluateExpression(conString, node);
             }
             //Writing the body evaluation condition as the output
             output.append(" 'while' expression=").append(result).append(";\n");
+            return result;
+        }));
+
+        /*
+         'string' command definition
+         */
+        COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            //Result
+            String result = null;
+            //Executingg different subcommands
+            switch (readOpNode(node.getChildren().get(0))) {
+                case "length":
+                    //String length
+                    result = Integer.toString(readOpNode(node.getChildren().get(1)).length());
+                    break;
+                case "index":
+                    //The char at index position
+                    result = "" + readOpNode(node.getChildren().get(1))
+                            .charAt(Integer.parseInt(readOpNode(node.getChildren().get(2))));
+                    break;
+                case "range":
+                    //Returng a substring
+                    result = readOpNode(node.getChildren().get(1))
+                            .substring(Integer.parseInt(readOpNode(node.getChildren().get(2))),
+                                    Integer.parseInt(readOpNode(node.getChildren().get(3))));
+                    break;
+                case "compare":
+                    //Comparing two strings
+                    result = Integer.toString(readOpNode(node.getChildren().get(1))
+                            .compareTo(readOpNode(node.getChildren().get(2))));
+                    break;
+                case "match":
+                    //Matching two strings
+                    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + readOpNode(node.getChildren().get(1)));
+                    result = Integer.toString(matcher.matches(Paths.get(readOpNode(node.getChildren().get(2)))) ? 1 : 0);
+                    break;
+                default:
+                    throw new TclExecutionException("Unknown string subcommand!", node);
+            }
             return result;
         }));
     }
@@ -308,18 +324,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     str.append(child.getValue());
                     break;
                 case PROGRAM:
-                    AbstractTclInterpreter subinterpreter
-                            = new TclInterpreter(new TclParser(new TclLexer(child.getValue())), context, false);
-                    String result = null;
-                    try {
-                        result = subinterpreter.run();
-                    } catch (AbstractTclParser.TclParserError ex) {
-                        Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                    } catch (AbstractTclInterpreter.TclExecutionException ex) {
-                        Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    str.append(result);
-                    output.append("[").append(subinterpreter.getOutput()).append("\n]\n");
+                    str.append(evaluateScript(child.getValue()));
                     break;
                 case WORD:
                     str.append(child.getValue());
@@ -405,6 +410,29 @@ public class TclInterpreter extends AbstractTclInterpreter {
         } catch (AbstractTclParser.TclParserError ex) {
             throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression!", node);
         }
+        return result;
+    }
+
+    /**
+     * Evaluating a Tcl script
+     *
+     * @param script
+     * @return
+     */
+    protected String evaluateScript(String script) {
+        //Creating a new instance of Tcl interpreter with the same context
+        AbstractTclInterpreter subinterpreter
+                = new TclInterpreter(new TclParser(new TclLexer(script)), context, false);
+        String result = null;
+        //Evaluating the script and catch errors that appear
+        try {
+            result = subinterpreter.run();
+        } catch (AbstractTclParser.TclParserError ex) {
+            Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (AbstractTclInterpreter.TclExecutionException ex) {
+            Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        output.append("[").append(subinterpreter.getOutput()).append("\n]\n");
         return result;
     }
 

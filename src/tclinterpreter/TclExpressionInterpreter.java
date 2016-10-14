@@ -16,6 +16,11 @@
  */
 package tclinterpreter;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+
 /**
  * A class for an interpreter of arithmetic expressions
  *
@@ -24,6 +29,29 @@ package tclinterpreter;
  */
 public class TclExpressionInterpreter extends AbstractTclInterpreter {
 
+    /**
+     * A map for mathematical functions
+     */
+    protected Map<String, Function<Double, Double>> functions;
+    //Initializing map
+    {
+        functions=new HashMap<> ();
+        functions.put("sin", Math::sin);
+        functions.put("cos", Math::cos);
+        functions.put("sqrt", Math::sqrt);
+        functions.put("sinh", Math::sinh);
+        functions.put("cosh", Math::cosh);
+        functions.put("tan", Math::tan);
+        functions.put("asin", Math::asin);
+        functions.put("acos", Math::acos);
+        functions.put("atan", Math::atan);
+        functions.put("exp", Math::exp);
+        functions.put("floor", Math::floor);
+        functions.put("abs", Math::abs);
+        functions.put("log", Math::log);
+        functions.put("log10", Math::log10);
+        functions.put("round", arg -> {return Long.valueOf(Math.round(arg)).doubleValue();});
+    }
     /**
      * Constructor
      *
@@ -40,7 +68,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
      * @return
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
-    protected OpResult CalculateNode(TclNode node) throws TclExecutionException {
+    protected OpResult calculateNode(TclNode node) throws TclExecutionException {
         OpResult n1, n2, n3;
         /*
          Switching based on the node type
@@ -50,30 +78,27 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
              If the node is a number, just get its value if it is parsable
              */
             case NUMBER:
-                if (!node.getValue().isEmpty()) {
-                    try {
-                        return new OpResult(Long.parseLong(node.getValue()));
-                    } catch (NumberFormatException ex) {
-                    }
-                    try {
-                        return new OpResult(Double.parseDouble(node.getValue()));
-                    } catch (NumberFormatException ex) {
-                        return new OpResult(node.getValue());
-                    }
-                } else {
-                    return new OpResult(0l);
-                }
-                
+                return readNumber(node.getValue());
             /*
              If the node is a string, just get its value
              */
             case STRING:
                 return new OpResult(node.getValue());
             /*
+               If the node is a functional operation, apply the function to the argument
+             */
+            case FUNC:
+                try {
+                return new OpResult(functions.get(node.getValue())
+                        .apply(calculateNode(node.getChildren().get(0)).getDouble()));
+                } catch (NoSuchElementException ex) {
+                    throw new TclExecutionException("Unknown mthematical function!", node);
+                }
+            /*
              If the node is an unary operation, apply it to the argument
              */
             case UNARYOP:
-                n1 = CalculateNode(node.getChildren().get(0));
+                n1 = calculateNode(node.getChildren().get(0));
                 switch (node.getValue()) {
                     case "+":
                         if (n1.isDouble()) {
@@ -107,8 +132,8 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
              If the node is a binary operation, apply it to its two arguments
              */
             case BINARYOP:
-                n1 = CalculateNode(node.getChildren().get(0));
-                n2 = CalculateNode(node.getChildren().get(1));
+                n1 = calculateNode(node.getChildren().get(0));
+                n2 = calculateNode(node.getChildren().get(1));
                 switch (node.getValue()) {
                     case "+":
                         if (n1.isLong() && n2.isLong()) {
@@ -240,9 +265,9 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
              If the node is a ternary operation, apply it to its three arguments
              */
             case TERNARYOP:
-                n1 = CalculateNode(node.getChildren().get(0));
-                n2 = CalculateNode(node.getChildren().get(1));
-                n3 = CalculateNode(node.getChildren().get(2));
+                n1 = calculateNode(node.getChildren().get(0));
+                n2 = calculateNode(node.getChildren().get(1));
+                n3 = calculateNode(node.getChildren().get(2));
                 if (n1.isDouble()) {
                     return n1.getDouble() != 0
                             ? (n2.isLong() ? new OpResult(n2.getLong()) : (n2.isDouble() ? new OpResult(n2.getDouble()) : new OpResult(n2.toString())))
@@ -256,9 +281,33 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
         return n1;
     }
 
+    /**
+     * Interpreting a string as a number
+     *
+     * @param number a number to read in form of a string
+     * @return
+     */
+    protected OpResult readNumber(String number) {
+        if (!number.isEmpty()) {
+            //If not empty try a long type then a double type
+            try {
+                return new OpResult(Long.parseLong(number));
+            } catch (NumberFormatException ex) {
+            }
+            try {
+                return new OpResult(Double.parseDouble(number));
+            } catch (NumberFormatException ex) {
+                return new OpResult(number);
+            }
+        } else {
+            //If empty return zero
+            return new OpResult(0l);
+        }
+    }
+
     @Override
     public String run() throws AbstractTclParser.TclParserError, TclExecutionException {
-        String result = CalculateNode(parser.parse()).toString();
+        String result = calculateNode(parser.parse()).toString();
         return result;
     }
 

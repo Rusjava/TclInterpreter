@@ -27,6 +27,7 @@ public enum TclNodeType {
     BINARYOP("BO"),
     UNARYOP("UO"),
     TERNARYOP("TO"),
+    FUNC("function"),
     NUMBER("number"),
     PROGRAM("PROG"),
     COMMAND("CMD"),

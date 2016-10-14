@@ -89,6 +89,29 @@ public class TclExpressionLexer extends AbstractTclLexer {
         }
         return string.toString();
     }
+    
+    /**
+     * Reading alphanumerical names of functions from
+     * the script
+     *
+     * @return
+     */
+    protected String readFunctionName() {
+        StringBuilder name = new StringBuilder("");
+        while ((Character.isDigit(getCurrentchar())
+                || Character.isLetter(getCurrentchar())
+                || getCurrentchar() == '_'
+                || getCurrentchar() == '\\') && getCurrentchar() != 0) {
+            if (getCurrentchar() == '\\') {
+                //Doing slash substitutions
+                name.append(replaceSymbol());
+            } else {
+                name.append(getCurrentchar());
+                advancePosition();
+            }
+        }
+        return name.toString();
+    }
 
     @Override
     public TclToken getCustomToken() {
@@ -208,14 +231,14 @@ public class TclExpressionLexer extends AbstractTclLexer {
             return new TclToken(TclTokenType.NE);
         } else if (getCurrentchar() == 'i' && peek() == 'n') {
             /*
-             Returning a string in list op token
+             Returning a string in a list op token
              */
             advancePosition();
             advancePosition();
             return new TclToken(TclTokenType.IN);
         } else if (getCurrentchar() == 'n' && peek() == 'i') {
             /*
-             Returning a string not in list op token
+             Returning a string not in a list op token
              */
             advancePosition();
             advancePosition();
@@ -290,6 +313,11 @@ public class TclExpressionLexer extends AbstractTclLexer {
             qflag = false;
             advancePosition();
             return new TclToken(TclTokenType.RIGHTQ);
+        } else if (Character.isLetter(getCurrentchar()) || getCurrentchar() == '_') {
+            /*
+             Returning a function name token
+             */
+            return new TclToken(TclTokenType.NAME).setValue(readFunctionName());
         } else {
             return null;
         }
