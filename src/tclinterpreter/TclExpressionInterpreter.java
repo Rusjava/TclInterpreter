@@ -30,28 +30,56 @@ import java.util.function.Function;
 public class TclExpressionInterpreter extends AbstractTclInterpreter {
 
     /**
-     * A map for mathematical functions
+     * A map for mathematical double to double functions
      */
-    protected Map<String, Function<Double, Double>> functions;
-    //Initializing map
+    protected Map<String, Function<Double, Double>> doubleToDoublefunctions;
+    /**
+     * A map for mathematical double to long functions
+     */
+    protected Map<String, Function<Double, Long>> doubleToLongfunctions;
+    /**
+     * A map for mathematical long to double functions
+     */
+    protected Map<String, Function<Long, Double>> longToDoublefunctions;
+
+    //Initializing maps
     {
-        functions=new HashMap<> ();
-        functions.put("sin", Math::sin);
-        functions.put("cos", Math::cos);
-        functions.put("sqrt", Math::sqrt);
-        functions.put("sinh", Math::sinh);
-        functions.put("cosh", Math::cosh);
-        functions.put("tan", Math::tan);
-        functions.put("asin", Math::asin);
-        functions.put("acos", Math::acos);
-        functions.put("atan", Math::atan);
-        functions.put("exp", Math::exp);
-        functions.put("floor", Math::floor);
-        functions.put("abs", Math::abs);
-        functions.put("log", Math::log);
-        functions.put("log10", Math::log10);
-        functions.put("round", arg -> {return Long.valueOf(Math.round(arg)).doubleValue();});
+        doubleToDoublefunctions = new HashMap<>();
+        doubleToDoublefunctions.put("sin", Math::sin);
+        doubleToDoublefunctions.put("cos", Math::cos);
+        doubleToDoublefunctions.put("sqrt", Math::sqrt);
+        doubleToDoublefunctions.put("sinh", Math::sinh);
+        doubleToDoublefunctions.put("cosh", Math::cosh);
+        doubleToDoublefunctions.put("tan", Math::tan);
+        doubleToDoublefunctions.put("tanh", Math::tanh);
+        doubleToDoublefunctions.put("asin", Math::asin);
+        doubleToDoublefunctions.put("acos", Math::acos);
+        doubleToDoublefunctions.put("atan", Math::atan);
+        doubleToDoublefunctions.put("exp", Math::exp);
+        doubleToDoublefunctions.put("floor", Math::floor);
+        doubleToDoublefunctions.put("ceil", Math::ceil);
+        doubleToDoublefunctions.put("abs", Math::abs);
+        doubleToDoublefunctions.put("log", Math::log);
+        doubleToDoublefunctions.put("log10", Math::log10);
+
+        doubleToLongfunctions = new HashMap<>();
+        doubleToLongfunctions.put("round", Math::round);
+        doubleToLongfunctions.put("int", arg -> {
+            return arg.longValue();
+        });
+        doubleToLongfunctions.put("wide", arg -> {
+            return arg.longValue();
+        });
+        doubleToLongfunctions.put("entier", arg -> {
+            return arg.longValue();
+        });
+
+        longToDoublefunctions = new HashMap<>();
+        longToDoublefunctions.put("double", arg -> {
+            return arg.doubleValue();
+        });
     }
+
     /**
      * Constructor
      *
@@ -88,12 +116,22 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
                If the node is a functional operation, apply the function to the argument
              */
             case FUNC:
-                try {
-                return new OpResult(functions.get(node.getValue())
-                        .apply(calculateNode(node.getChildren().get(0)).getDouble()));
-                } catch (NoSuchElementException ex) {
-                    throw new TclExecutionException("Unknown mthematical function!", node);
+                OpResult arg = calculateNode(node.getChildren().get(0));
+                //If the argument is integer then check function accepting an integer argument
+                if (arg.isLong()) {
+                    if (longToDoublefunctions.containsKey(node.getValue())) {
+                        return new OpResult(longToDoublefunctions.get(node.getValue()).apply(arg.getLong()));
+                    }
                 }
+                //If the argument is integer or double then check function accepting a double argument
+                if (arg.isDouble()) {
+                    if (doubleToLongfunctions.containsKey(node.getValue())) {
+                        return new OpResult(doubleToLongfunctions.get(node.getValue()).apply(arg.getDouble()));
+                    } else if (doubleToDoublefunctions.containsKey(node.getValue())) {
+                        return new OpResult(doubleToDoublefunctions.get(node.getValue()).apply(arg.getDouble()));
+                    }
+                }
+                throw new TclExecutionException("Unknown mathematical function or not numerical argument!", node);
             /*
              If the node is an unary operation, apply it to the argument
              */
