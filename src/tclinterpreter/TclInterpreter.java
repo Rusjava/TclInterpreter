@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -289,6 +290,34 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     break;
                 default:
                     throw new TclExecutionException("Unknown string subcommand!", node);
+            }
+            return result;
+        }));
+
+        /*
+        'list' command
+         */
+        COMMANDS.put("list", new GenericTclCommand("list", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+            List<String> list = new ArrayList<>();
+            //Adding all 'list' command arguments to the list
+            for (TclNode arg : node.getChildren()) {
+                list.add(readOpNode(arg));
+            }
+            return list.get(0);
+        }));
+
+        /*
+        'lindex' command
+         */
+        COMMANDS.put("lindex", new GenericTclCommand("lindex", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            List<String> list = context.getList(readOpNode(node.getChildren().get(0)));
+            String result = null;
+            if (list != null) {
+                try {
+                    result = list.get(Integer.parseInt(readOpNode(node.getChildren().get(1))));
+                } catch (NumberFormatException ex) {
+                    throw new TclExecutionException("The index of a list element must be an integer number!", node);
+                }
             }
             return result;
         }));
