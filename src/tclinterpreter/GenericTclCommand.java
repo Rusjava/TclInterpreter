@@ -16,18 +16,21 @@
  */
 package tclinterpreter;
 
+import java.util.ArrayList;
+import tclinterpreter.GenericTclCommand.TclList;
+
 /**
  * General class for Tcl commands implementing TclCommand interface
  *
  * @author Ruslan Feshchenko
  * @version 0.1
  */
-public class GenericTclCommand implements TclCommand<TclNode, String> {
+public class GenericTclCommand implements TclCommand<TclNode, TclList> {
 
     /**
      * Tcl command body
      */
-    protected TclCommand<TclNode, String> command;
+    protected TclCommand<TclNode, TclList> command;
 
     /**
      * Minimal number of argument
@@ -46,7 +49,7 @@ public class GenericTclCommand implements TclCommand<TclNode, String> {
      * @param argNumber
      * @param command
      */
-    public GenericTclCommand(String name, int argNumber, TclCommand command) {
+    public GenericTclCommand(String name, int argNumber, TclCommand<TclNode, TclList> command) {
         this.name = name;
         this.argNumber = argNumber;
         this.command = command;
@@ -70,7 +73,7 @@ public class GenericTclCommand implements TclCommand<TclNode, String> {
      * @throws AbstractTclInterpreter.TclExecutionException
      */
     @Override
-    public String apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
+    public TclList apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
         if (command == null) {
             return null;
         }
@@ -86,6 +89,31 @@ public class GenericTclCommand implements TclCommand<TclNode, String> {
             //In less than argNumber operands, throw an error
             throw new AbstractTclInterpreter.TclExecutionException(name
                     + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", node);
+        }
+    }
+
+    /**
+     * A class for Tcl lists
+     */
+    public static class TclList extends ArrayList<String> {
+
+        /**
+         * Simple constructor
+         */
+        public TclList() {
+            super();
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder str = new StringBuilder();
+            //Building the string as a sum of all elements
+            str.append(this.get(0));
+            for (int i = 1; i < this.size(); i++) {
+                str.append(" ");
+                str.append(this.get(i));
+            }
+            return str.toString();
         }
     }
 }
