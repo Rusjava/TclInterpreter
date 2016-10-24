@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
@@ -79,7 +80,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
          Empty command
          */
         COMMANDS.put("eof", new GenericTclCommand("set", 0, (TclCommand<TclNode, TclList>) (TclNode node) -> {
-            TclList list=new TclList();
+            TclList list = new TclList();
             list.add("");
             return list;
         }));
@@ -106,15 +107,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
             } else //If only one opernad, read and return the variable or array element
-            {
-                if (index == null) {
+             if (index == null) {
                     value = context.getVaribale(name);
                     output.append(" ").append(name).append("=").append(value).append(";");
                 } else {
                     value = context.getArrayElement(name, index);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
-            }
             TclList list = new TclList();
             list.add(value);
             return list;
@@ -284,34 +283,54 @@ public class TclInterpreter extends AbstractTclInterpreter {
             //Result
             String result = null;
             //Executingg different subcommands
-            switch (readOpNode(node.getChildren().get(0))) {
-                case "length":
-                    //String length
-                    result = Integer.toString(readOpNode(node.getChildren().get(1)).length());
-                    break;
-                case "index":
-                    //The char at index position
-                    result = "" + readOpNode(node.getChildren().get(1))
-                            .charAt(Integer.parseInt(readOpNode(node.getChildren().get(2))));
-                    break;
-                case "range":
-                    //Returng a substring
-                    result = readOpNode(node.getChildren().get(1))
-                            .substring(Integer.parseInt(readOpNode(node.getChildren().get(2))),
-                                    Integer.parseInt(readOpNode(node.getChildren().get(3))));
-                    break;
-                case "compare":
-                    //Comparing two strings
-                    result = Integer.toString(readOpNode(node.getChildren().get(1))
-                            .compareTo(readOpNode(node.getChildren().get(2))));
-                    break;
-                case "match":
-                    //Matching two strings
-                    PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + readOpNode(node.getChildren().get(1)));
-                    result = Integer.toString(matcher.matches(Paths.get(readOpNode(node.getChildren().get(2)))) ? 1 : 0);
-                    break;
-                default:
-                    throw new TclExecutionException("Unknown string subcommand!", node);
+            try {
+                switch (readOpNode(node.getChildren().get(0))) {
+                    case "length":
+                        //String length
+                        result = Integer.toString(readOpNode(node.getChildren().get(1)).length());
+                        break;
+                    case "index":
+                        //The char at index position
+                        result = "" + readOpNode(node.getChildren().get(1))
+                                .charAt(Integer.parseInt(readOpNode(node.getChildren().get(2))));
+                        break;
+                    case "range":
+                        //Returng a substring
+                        result = readOpNode(node.getChildren().get(1))
+                                .substring(Integer.parseInt(readOpNode(node.getChildren().get(2))),
+                                        Integer.parseInt(readOpNode(node.getChildren().get(3))));
+                        break;
+                    case "compare":
+                        //Comparing two strings
+                        result = Integer.toString(readOpNode(node.getChildren().get(1))
+                                .compareTo(readOpNode(node.getChildren().get(2))));
+                        break;
+                    case "match":
+                        //Matching two strings
+                        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + readOpNode(node.getChildren().get(1)));
+                        result = Integer.toString(matcher.matches(Paths.get(readOpNode(node.getChildren().get(2)))) ? 1 : 0);
+                        break;
+                    case "first":
+                        //Index of the first character of a substring
+                        result = Integer.toString(readOpNode(node.getChildren().get(2)).indexOf(readOpNode(node.getChildren().get(1))));
+                        break;
+                    case "last":
+                        //Index of the last character of a substring
+                        result = Integer.toString(readOpNode(node.getChildren().get(2)).lastIndexOf(readOpNode(node.getChildren().get(1))));
+                        break;
+                    case "tolower":
+                        //Converting to lower case
+                        result = readOpNode(node.getChildren().get(1)).toLowerCase();
+                        break;
+                    case "toupper":
+                        //Converting to upper case
+                        result = readOpNode(node.getChildren().get(1)).toUpperCase();
+                        break;
+                    default:
+                        throw new TclExecutionException("Unknown string subcommand!", node);
+                }
+            } catch (NumberFormatException ex) {
+                throw new TclExecutionException("String indexes must be ingegers!", node);
             }
             TclList list = new TclList();
             list.add(result);
