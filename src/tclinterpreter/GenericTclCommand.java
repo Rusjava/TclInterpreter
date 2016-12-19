@@ -86,7 +86,7 @@ public class GenericTclCommand implements TclCommand<TclNode, TclList> {
                         + name + "' command!", node);
             }
         } else {
-            //In less than argNumber operands, throw an error
+            //If less than argNumber operands, throw an error
             throw new AbstractTclInterpreter.TclExecutionException(name
                     + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", node);
         }
@@ -107,11 +107,14 @@ public class GenericTclCommand implements TclCommand<TclNode, TclList> {
         @Override
         public String toString() {
             StringBuilder str = new StringBuilder();
+            //If empty list return null
+            if (this.size() == 0) {
+                return null;
+            }
             //Building the string as a sum of all elements
             str.append(this.get(0));
             for (int i = 1; i < this.size(); i++) {
-                str.append(" ");
-                str.append(this.get(i));
+                str.append(" ").append(this.get(i));
             }
             return str.toString();
         }

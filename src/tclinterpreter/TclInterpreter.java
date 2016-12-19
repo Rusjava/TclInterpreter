@@ -81,7 +81,6 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("eof", new GenericTclCommand("set", 0, (TclCommand<TclNode, TclList>) (TclNode node) -> {
             TclList list = new TclList();
-            list.add("");
             return list;
         }));
         /*
@@ -102,20 +101,18 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 value = readOpNode(node.getChildren().get(1));
                 if (index == null) {
                     context.setVaribale(name, value);
-                    output.append(" ").append(name).append("=").append(value).append(";");
+                    output.append(" ").append(name).append("=").append(value).append(";\n");
                 } else {
                     context.setArrayElement(name, index, value);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
+                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
             } else //If only one opernad, read and return the variable or array element
-            {
-                if (index == null) {
-                    value = context.getVaribale(name);
-                    output.append(" ").append(name).append("=").append(value).append(";");
-                } else {
-                    value = context.getArrayElement(name, index);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
-                }
+            if (index == null) {
+                value = context.getVaribale(name);
+                output.append(" ").append(name).append("=").append(value).append(";\n");
+            } else {
+                value = context.getArrayElement(name, index);
+                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             list.add(value);
             return list;
@@ -154,7 +151,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             out.append("Tcl> ")
                     .append(value)
                     .append("\n");
-            output.append(" output: ").append(value).append(";");
+            output.append(" output: ").append(value).append(";\n");
             TclList list = new TclList();
             list.add(value);
             return list;
@@ -167,7 +164,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             //The second round of substitutions
             String result = evaluateExpression(readOpNode(node.getChildren().get(0)), node);
             //Creating output
-            output.append(" expression=").append(result).append(";");
+            output.append(" expression=").append(result).append(";\n");
             TclList list = new TclList();
             list.add(result);
             return list;
@@ -358,24 +355,26 @@ public class TclInterpreter extends AbstractTclInterpreter {
         }));
 
         /*
-        'list' command
+        'list' command - creating a Tcl list
          */
         COMMANDS.put("list", new GenericTclCommand("list", 1, (TclCommand<TclNode, TclList>) (TclNode node) -> {
-            List<String> list = new ArrayList<>();
+            TclList list = new TclList();
             //Adding all 'list' command arguments to the list
             for (TclNode arg : node.getChildren()) {
                 list.add(readOpNode(arg));
             }
-            TclList tlist = new TclList();
-            tlist.add(list.get(0));
-            return tlist;
+            output.append("List: ").append(list).append(";\n");
+            return list;
         }));
 
         /*
-        'lindex' command
+        'lindex' command - an element of the list at 'index' position
          */
         COMMANDS.put("lindex", new GenericTclCommand("lindex", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
-            List<String> list = context.getList(readOpNode(node.getChildren().get(0)));
+            //List's name
+            String name = readOpNode(node.getChildren().get(0));
+            //List's content
+            List<String> list = context.getList(name);
             String result = null;
             if (list != null) {
                 try {
@@ -386,6 +385,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             TclList tlist = new TclList();
             tlist.add(result);
+            output.append("Element of the '").append(name).append("' list = ").append(result).append(";\n");
             return tlist;
         }));
     }
@@ -398,7 +398,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected String executeCommand(TclNode command) throws TclExecutionException {
-        output.append("\n");
+        //output.append("\n");
         return COMMANDS.get(command.getValue()).apply(command).toString();
     }
 
@@ -528,7 +528,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         } catch (AbstractTclInterpreter.TclExecutionException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         }
-        output.append("[").append(subinterpreter.getOutput()).append("\n]\n");
+        output.append("[").append(subinterpreter.getOutput()).append("]\n");
         return result;
     }
 
@@ -559,7 +559,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
     @Override
     public String run() throws TclParser.TclParserError, TclExecutionException {
         TclNode root = parser.parse();
-        output.append("Executing ").append(root.getValue()).append(": ");
+        output.append("Executing ").append(root.getValue()).append(":\n");
         return executeProgram(root);
     }
 
