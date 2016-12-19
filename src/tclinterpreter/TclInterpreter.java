@@ -90,6 +90,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("set", new GenericTclCommand("set", 1, (TclCommand<TclNode, TclList>) (TclNode node) -> {
             String value;
             String index = null;
+            TclList list = new TclList();
             String name = readOpNode(node.getChildren().get(0));
             //Checking if the name is the variable of array id
             if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
@@ -107,14 +108,15 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
             } else //If only one opernad, read and return the variable or array element
-             if (index == null) {
+            {
+                if (index == null) {
                     value = context.getVaribale(name);
                     output.append(" ").append(name).append("=").append(value).append(";");
                 } else {
                     value = context.getArrayElement(name, index);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";");
                 }
-            TclList list = new TclList();
+            }
             list.add(value);
             return list;
         }));
@@ -281,7 +283,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
             //Result
-            String result = null;
+            String result = null, charset, str;
+            char[] strarray;
+            int i = 0;
             //Executingg different subcommands
             try {
                 switch (readOpNode(node.getChildren().get(0))) {
@@ -325,6 +329,22 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     case "toupper":
                         //Converting to upper case
                         result = readOpNode(node.getChildren().get(1)).toUpperCase();
+                        break;
+                    case "trimleft":
+                        //Trimming chars from the left
+                        str = readOpNode(node.getChildren().get(1));
+                        strarray = str.toCharArray();
+                        //Trim spaces if no charset is given
+                        try {
+                            charset = readOpNode(node.getChildren().get(2));
+                        } catch (IndexOutOfBoundsException ex) {
+                            charset = null;
+                        }
+                        //Skipping trimmed chracters
+                        while (isInCharset(strarray[i], charset)) {
+                            i++;
+                        }
+                        result = str.substring(i);
                         break;
                     default:
                         throw new TclExecutionException("Unknown string subcommand!", node);
@@ -543,4 +563,18 @@ public class TclInterpreter extends AbstractTclInterpreter {
         return executeProgram(root);
     }
 
+    /**
+     * Checking a character belongs to a charset or is a whitespace
+     *
+     * @param ch
+     * @param chset
+     * @return
+     */
+    protected boolean isInCharset(char ch, String chset) {
+        if (chset != null) {
+            return chset.contains("" + ch);
+        } else {
+            return Character.isWhitespace(ch);
+        }
+    }
 }
