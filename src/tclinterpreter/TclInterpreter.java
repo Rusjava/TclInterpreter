@@ -281,10 +281,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'string' command definition
          */
         COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
-            //Result
-            String result = null, charset;
+            //Variable for the result
+            String result = null;
             int i = 0, k;
-            char ch;
             //Executingg different subcommands
             try {
                 switch (readOpNode(node.getChildren().get(0))) {
@@ -371,72 +370,21 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         break;
                     case "trimleft":
                         //Trimming chars from the left
-                        result = readOpNode(node.getChildren().get(1));
-                        //Trim spaces if no charset is given
-                        try {
-                            charset = readOpNode(node.getChildren().get(2));
-                        } catch (IndexOutOfBoundsException ex) {
-                            charset = null;
-                        }
-                        //Skipping trimmed characters
-                        while (isInCharset(result.charAt(i), charset)) {
-                            i++;
-                            if (i == result.length()) {
-                                break;
-                            }
-                        }
-                        result = (i == result.length()) ? result.substring(i) : "";
+                        result = trimString(node, -1);
                         break;
                     case "trimright":
                         //Trimming chars from the right
-                        result = readOpNode(node.getChildren().get(1));
-                        //Trim spaces if no charset is given
-                        try {
-                            charset = readOpNode(node.getChildren().get(2));
-                        } catch (IndexOutOfBoundsException ex) {
-                            charset = null;
-                        }
-                        //Skipping trimmed characters
-                        k = result.length() - 1;
-                        while (isInCharset(result.charAt(k), charset)) {
-                            k--;
-                            if (k == -1) {
-                                break;
-                            }
-                        }
-                        result = (k != -1) ? result.substring(0, k + 1) : "";
+                        result = trimString(node, 1);
                         break;
                     case "trim":
                         //Trimming chars from the left
-                        result = readOpNode(node.getChildren().get(1));
-                        //Trim spaces if no charset is given
-                        try {
-                            charset = readOpNode(node.getChildren().get(2));
-                        } catch (IndexOutOfBoundsException ex) {
-                            charset = null;
-                        }
-                        //Skipping trimmed characters from the left
-                        while (isInCharset(result.charAt(i), charset)) {
-                            i++;
-                            if (i == result.length()) {
-                                break;
-                            }
-                        }
-                        k = result.length() - 1;
-                        //Skipping trimmed characters from the right
-                        while (isInCharset(result.charAt(k), charset)) {
-                            k--;
-                            if (k == -1) {
-                                break;
-                            }
-                        }
-                        result = (k != -1 && i != result.length()) ? result.substring(i, k + 1) : "";
+                        result = trimString(node, 0);
                         break;
                     default:
                         throw new TclExecutionException("Unknown string subcommand!", node);
                 }
             } catch (NumberFormatException ex) {
-                throw new TclExecutionException("String indexes must be ingegers!", node);
+                throw new TclExecutionException("String indexes must be integer numbers!", node);
             }
             output.append(" string=").append(result).append(";\n");
             TclList list = new TclList();
@@ -444,6 +392,25 @@ public class TclInterpreter extends AbstractTclInterpreter {
             return list;
         }));
 
+        /*
+         'format' command definition - formatted output to a string
+         */
+        COMMANDS.put("format", new GenericTclCommand("format", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
+            //Variable for the result
+            String result = null;
+            int i;
+            //Format string
+            String fString = readOpNode(node.getChildren().get(0));
+            String[] args = new String[node.getChildren().size() - 1];
+            //Extracting values to print
+            for (i = 1; i < node.getChildren().size(); i++) {
+                args[i - 1] = readOpNode(node.getChildren().get(i));
+            }
+            output.append(" formatted string=").append(result).append(";\n");
+            TclList list = new TclList();
+            list.add(result);
+            return list;
+        }));
         /*
         'list' command - creating a Tcl list
          */
@@ -666,5 +633,45 @@ public class TclInterpreter extends AbstractTclInterpreter {
         } else {
             return Character.isWhitespace(ch);
         }
+    }
+
+    /**
+     * A general function for string trimming
+     *
+     * @param node
+     * @param flag 1 - trim left, -1 - trim right and 0 - trim both
+     * @return
+     */
+    protected String trimString(TclNode node, int flag) {
+        String result = readOpNode(node.getChildren().get(1));
+        String charset;
+        int i = 0, k;
+        //Trim spaces if no charset is given
+        try {
+            charset = readOpNode(node.getChildren().get(2));
+        } catch (IndexOutOfBoundsException ex) {
+            charset = null;
+        }
+        //Skipping trimmed characters from the left
+        if (flag <= 0) {
+            while (isInCharset(result.charAt(i), charset)) {
+                i++;
+                if (i == result.length()) {
+                    break;
+                }
+            }
+        }
+        k = result.length() - 1;
+        //Skipping trimmed characters from the right
+        if (flag >= 0) {
+            while (isInCharset(result.charAt(k), charset)) {
+                k--;
+                if (k == -1) {
+                    break;
+                }
+            }
+        }
+        result = (k != -1 && i != result.length()) ? result.substring(i, k + 1) : "";
+        return result;
     }
 }
