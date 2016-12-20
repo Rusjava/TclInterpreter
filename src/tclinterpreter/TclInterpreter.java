@@ -107,12 +107,14 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
             } else //If only one opernad, read and return the variable or array element
-            if (index == null) {
-                value = context.getVaribale(name);
-                output.append(" ").append(name).append("=").append(value).append(";\n");
-            } else {
-                value = context.getArrayElement(name, index);
-                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+            {
+                if (index == null) {
+                    value = context.getVaribale(name);
+                    output.append(" ").append(name).append("=").append(value).append(";\n");
+                } else {
+                    value = context.getArrayElement(name, index);
+                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                }
             }
             list.add(value);
             return list;
@@ -280,9 +282,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
             //Result
-            String result = null, charset, str;
-            char[] strarray;
-            int i = 0;
+            String result = null, charset;
+            int i = 0, k;
+            char ch;
             //Executingg different subcommands
             try {
                 switch (readOpNode(node.getChildren().get(0))) {
@@ -292,8 +294,12 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         break;
                     case "index":
                         //The char at index position
-                        result = "" + readOpNode(node.getChildren().get(1))
-                                .charAt(Integer.parseInt(readOpNode(node.getChildren().get(2))));
+                        try {
+                            result = "" + readOpNode(node.getChildren().get(1))
+                                    .charAt(Integer.parseInt(readOpNode(node.getChildren().get(2))));
+                        } catch (NumberFormatException ex) {
+                            throw new TclExecutionException("The index of a string must be an integer number!", node);
+                        }
                         break;
                     case "range":
                         //Returng a substring
@@ -319,6 +325,42 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         //Index of the last character of a substring
                         result = Integer.toString(readOpNode(node.getChildren().get(2)).lastIndexOf(readOpNode(node.getChildren().get(1))));
                         break;
+                    case "wordstart":
+                        //The index of the first character of the word contating the index character
+                        result = readOpNode(node.getChildren().get(1));
+                        //Reading the character's index
+                        try {
+                            i = Integer.parseInt(readOpNode(node.getChildren().get(2)));
+                        } catch (NumberFormatException ex) {
+                            throw new TclExecutionException("The index of a string must be an integer number!", node);
+                        }
+                        k = i;
+                        while ((Character.isLetterOrDigit(result.charAt(k)) || result.charAt(k) == '_')) {
+                            k--;
+                            if (k == -1) {
+                                break;
+                            }
+                        }
+                        result = "" + (Character.isLetterOrDigit(result.charAt(i)) || result.charAt(i) == '_' ? k + 1 : i);
+                        break;
+                    case "wordend":
+                        //The index of the last+1 character of the word contating the index character
+                        result = readOpNode(node.getChildren().get(1));
+                        //Reading the character's index
+                        try {
+                            i = Integer.parseInt(readOpNode(node.getChildren().get(2)));
+                        } catch (NumberFormatException ex) {
+                            throw new TclExecutionException("The index of a string must be an integer number!", node);
+                        }
+                        k = i;
+                        while ((Character.isLetterOrDigit(result.charAt(k)) || result.charAt(k) == '_')) {
+                            k++;
+                            if (k == result.length()) {
+                                break;
+                            }
+                        }
+                        result = "" + (Character.isLetterOrDigit(result.charAt(i)) || result.charAt(i) == '_' ? k : i + 1);
+                        break;
                     case "tolower":
                         //Converting to lower case
                         result = readOpNode(node.getChildren().get(1)).toLowerCase();
@@ -329,19 +371,66 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         break;
                     case "trimleft":
                         //Trimming chars from the left
-                        str = readOpNode(node.getChildren().get(1));
-                        strarray = str.toCharArray();
+                        result = readOpNode(node.getChildren().get(1));
                         //Trim spaces if no charset is given
                         try {
                             charset = readOpNode(node.getChildren().get(2));
                         } catch (IndexOutOfBoundsException ex) {
                             charset = null;
                         }
-                        //Skipping trimmed chracters
-                        while (isInCharset(strarray[i], charset)) {
+                        //Skipping trimmed characters
+                        while (isInCharset(result.charAt(i), charset)) {
                             i++;
+                            if (i == result.length()) {
+                                break;
+                            }
                         }
-                        result = str.substring(i);
+                        result = (i == result.length()) ? result.substring(i) : "";
+                        break;
+                    case "trimright":
+                        //Trimming chars from the right
+                        result = readOpNode(node.getChildren().get(1));
+                        //Trim spaces if no charset is given
+                        try {
+                            charset = readOpNode(node.getChildren().get(2));
+                        } catch (IndexOutOfBoundsException ex) {
+                            charset = null;
+                        }
+                        //Skipping trimmed characters
+                        k = result.length() - 1;
+                        while (isInCharset(result.charAt(k), charset)) {
+                            k--;
+                            if (k == -1) {
+                                break;
+                            }
+                        }
+                        result = (k != -1) ? result.substring(0, k + 1) : "";
+                        break;
+                    case "trim":
+                        //Trimming chars from the left
+                        result = readOpNode(node.getChildren().get(1));
+                        //Trim spaces if no charset is given
+                        try {
+                            charset = readOpNode(node.getChildren().get(2));
+                        } catch (IndexOutOfBoundsException ex) {
+                            charset = null;
+                        }
+                        //Skipping trimmed characters from the left
+                        while (isInCharset(result.charAt(i), charset)) {
+                            i++;
+                            if (i == result.length()) {
+                                break;
+                            }
+                        }
+                        k = result.length() - 1;
+                        //Skipping trimmed characters from the right
+                        while (isInCharset(result.charAt(k), charset)) {
+                            k--;
+                            if (k == -1) {
+                                break;
+                            }
+                        }
+                        result = (k != -1 && i != result.length()) ? result.substring(i, k + 1) : "";
                         break;
                     default:
                         throw new TclExecutionException("Unknown string subcommand!", node);
@@ -349,6 +438,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             } catch (NumberFormatException ex) {
                 throw new TclExecutionException("String indexes must be ingegers!", node);
             }
+            output.append(" string=").append(result).append(";\n");
             TclList list = new TclList();
             list.add(result);
             return list;
