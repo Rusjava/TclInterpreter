@@ -20,12 +20,13 @@ import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Formatter;
 import java.util.HashMap;
+import java.util.IllegalFormatConversionException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
+import java.util.MissingFormatArgumentException;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -107,15 +108,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
             } else //If only one opernad, read and return the variable or array element
-            {
-                if (index == null) {
+             if (index == null) {
                     value = context.getVaribale(name);
                     output.append(" ").append(name).append("=").append(value).append(";\n");
                 } else {
                     value = context.getArrayElement(name, index);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
-            }
             list.add(value);
             return list;
         }));
@@ -401,11 +400,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
             int i;
             //Format string
             String fString = readOpNode(node.getChildren().get(0));
-            String[] args = new String[node.getChildren().size() - 1];
+            Object[] args = new String[node.getChildren().size() - 1];
             //Extracting values to print
             for (i = 1; i < node.getChildren().size(); i++) {
                 args[i - 1] = readOpNode(node.getChildren().get(i));
             }
+            //New formatter
+            result = Integer.toString(getStringFormattersNumber(fString));
             output.append(" formatted string=").append(result).append(";\n");
             TclList list = new TclList();
             list.add(result);
@@ -673,5 +674,30 @@ public class TclInterpreter extends AbstractTclInterpreter {
         }
         result = (k != -1 && i != result.length()) ? result.substring(i, k + 1) : "";
         return result;
+    }
+
+    /**
+     * Getting the number of formatters in a format string
+     *
+     * @param fstr - format string
+     * @return
+     */
+    protected int getStringFormattersNumber(String fstr) {
+        //New formatter
+        Formatter fmt = new Formatter();
+        Object[] args;
+        int fnum = 0;
+        boolean flag = true;
+        while (flag) {
+            flag=false;
+            args = new Object[fnum];
+            try {
+                fmt.format(fstr, args).toString();
+            } catch (MissingFormatArgumentException ex) {
+                flag=true;
+                fnum++;
+            }
+        }
+        return fnum;
     }
 }
