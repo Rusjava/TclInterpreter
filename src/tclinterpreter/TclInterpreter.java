@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.IllegalFormatConversionException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.IllegalFormatException;
 import java.util.Map;
 import java.util.MissingFormatArgumentException;
 import java.util.NoSuchElementException;
@@ -400,13 +402,57 @@ public class TclInterpreter extends AbstractTclInterpreter {
             int i;
             //Format string
             String fString = readOpNode(node.getChildren().get(0));
-            Object[] args = new String[node.getChildren().size() - 1];
-            //Extracting values to print
-            for (i = 1; i < node.getChildren().size(); i++) {
-                args[i - 1] = readOpNode(node.getChildren().get(i));
+            String fmStr;
+            Object[] args = new Object[node.getChildren().size() - 1];
+            List<String> fmts = null;
+            //Extracting formatters
+            try {
+                fmts = getStringFormatters(fString);
+            } catch (IllegalFormatException ex) {
+                throw new TclExecutionException("Illegal format string! - " + ex.getMessage(), node);
             }
-            //New formatter
-            result = Integer.toString(getStringFormattersNumber(fString));
+            //Extracting values to print
+            try {
+                for (i = 1; i < node.getChildren().size(); i++) {
+                    fmStr = readOpNode(node.getChildren().get(i));
+                    //Converting arguments according to extracted format strings
+                    switch (fmts.get(i - 1).charAt(fmts.get(i - 1).length() - 1)) {
+                        case 's':
+                            args[i - 1] = fmStr;
+                            break;
+                        case 'g':
+                        case 'G':
+                        case 'e':
+                        case 'E':
+                        case 'f':
+                            args[i - 1] = Double.valueOf((String) fmStr);
+                            break;
+                        case 'i':
+                        case 'd':
+                        case 'u':
+                        case 'o':
+                        case 'X':
+                        case 'x':
+                            args[i - 1] = Long.valueOf((String) fmStr);
+                            break;
+                        case 'c':
+                            args[i - 1] = fmStr.charAt(0);
+                            break;
+                        default:
+                            throw new TclExecutionException("Unsupported formatter! - " + fmStr, node);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                throw new TclExecutionException("An argument does not match the formatter! - "
+                        + ex.getMessage(), node);
+            }
+            //Creating and applying string formatter
+            Formatter fmt = new Formatter();
+            try {
+                result = fmt.format(fString, args).toString();
+            } catch (MissingFormatArgumentException ex) {
+                throw new TclExecutionException("The number of formatters exceed the number of arguments!", node);
+            }
             output.append(" formatted string=").append(result).append(";\n");
             TclList list = new TclList();
             list.add(result);
@@ -452,12 +498,12 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * Executing a Tcl command
      *
      * @param command
-     * @return the condition of a command
+     * @return the result of a command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
-    protected String executeCommand(TclNode command) throws TclExecutionException {
+    protected TclList executeCommand(TclNode command) throws TclExecutionException {
         //output.append("\n");
-        return COMMANDS.get(command.getValue()).apply(command).toString();
+        return COMMANDS.get(command.getValue()).apply(command);
     }
 
     /**
@@ -594,15 +640,15 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * Executing a sequence of commands
      *
      * @param program node
-     * @return the condition of the last command
+     * @return the result of the last command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
-    protected String executeProgram(TclNode program) throws TclExecutionException {
+    protected TclList executeProgram(TclNode program) throws TclExecutionException {
         List<TclNode> chld = program.getChildren();
-        String lastResult = null;
+        TclList res, lastResult = null;
         for (TclNode node : chld) {
-            String res = executeCommand(node);
-            lastResult = (res == null) ? lastResult : res;
+            res = executeCommand(node);
+            lastResult = (res.size() == 0) ? lastResult : res;
         }
         return lastResult;
     }
@@ -618,7 +664,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
     public String run() throws TclParser.TclParserError, TclExecutionException {
         TclNode root = parser.parse();
         output.append("Executing ").append(root.getValue()).append(":\n");
-        return executeProgram(root);
+        return executeProgram(root).toString();
     }
 
     /**
@@ -677,27 +723,31 @@ public class TclInterpreter extends AbstractTclInterpreter {
     }
 
     /**
-     * Getting the number of formatters in a format string
+     * Getting all formatters in a format string
      *
      * @param fstr - format string
-     * @return
+     * @return - list of format specifiers
      */
-    protected int getStringFormattersNumber(String fstr) {
+    protected List<String> getStringFormatters(String fstr) {
         //New formatter
         Formatter fmt = new Formatter();
         Object[] args;
+        List<String> lst = new ArrayList<>();
         int fnum = 0;
         boolean flag = true;
         while (flag) {
-            flag=false;
+            flag = false;
             args = new Object[fnum];
             try {
                 fmt.format(fstr, args).toString();
             } catch (MissingFormatArgumentException ex) {
-                flag=true;
+                lst.add(ex.getFormatSpecifier());
+                flag = true;
                 fnum++;
+            } catch (IllegalFormatException ex) {
+                throw ex;
             }
         }
-        return fnum;
+        return lst;
     }
 }
