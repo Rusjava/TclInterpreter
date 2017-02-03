@@ -47,6 +47,11 @@ public abstract class AbstractTclInterpreter {
      * level context and attributes
      */
     protected TclInterpreterContext context;
+    
+    /**
+     * The command result
+     */
+    protected TclList rlist = null;
 
     /**
      * A full constructor with output stream
@@ -143,8 +148,15 @@ public abstract class AbstractTclInterpreter {
     }
 
     /**
+     * @return the rlist
+     */
+    public TclList getRlist() {
+        return rlist;
+    }
+
+    /**
      * A general class for execution errors thrown by interpreters
-     * 
+     *
      */
     public static class TclExecutionException extends Exception {
 
@@ -152,21 +164,21 @@ public abstract class AbstractTclInterpreter {
          * The node being evaluated
          */
         protected TclNode currentnode;
-        
+
         /**
          * A construtor
-         * 
+         *
          * @param msg
          * @param currentnode the node being evaluated
          */
-        public TclExecutionException (String msg, TclNode currentnode) {
+        public TclExecutionException(String msg, TclNode currentnode) {
             super(msg);
-            this.currentnode=currentnode;
+            this.currentnode = currentnode;
         }
-        
+
         @Override
         public String toString() {
-            return super.getMessage()+" (at " +currentnode+" )";
+            return super.getMessage() + " (at " + currentnode + " )";
         }
     }
 }

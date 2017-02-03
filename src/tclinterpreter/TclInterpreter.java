@@ -22,7 +22,6 @@ import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Formatter;
 import java.util.HashMap;
-import java.util.IllegalFormatConversionException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import java.util.MissingFormatArgumentException;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import tclinterpreter.GenericTclCommand.TclList;
 
 /**
  * This class interpretes Tcl scripts
@@ -109,7 +107,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     context.setArrayElement(name, index, value);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
-            } else //If only one opernad, read and return the variable or array element
+            } else //If only one operand, read and return the variable or array element
              if (index == null) {
                     value = context.getVaribale(name);
                     output.append(" ").append(name).append("=").append(value).append(";\n");
@@ -176,8 +174,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
          'if' command definition
          */
         COMMANDS.put("if", new GenericTclCommand("if", 2, (TclCommand<TclNode, TclList>) (TclNode node) -> {
-            String result = null, intresult;
-            TclList list = new TclList();
+            TclList result = null;
+            String intresult;
             //Creating an iterator over the list of arguments
             Iterator<TclNode> iter = node.getChildren().iterator();
             String expression = evaluateExpression(readOpNode(iter.next()), node);
@@ -195,8 +193,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                         //Parsing and interprerting the first body
                         result = evaluateScript(intresult);
                         output.append(" if=then: ").append(result).append(";\n");
-                        list.add(result);
-                        return list;
+                        return result;
                     } else {
                         intresult = readOpNode(iter.next());
                         switch (intresult.toLowerCase()) {
@@ -209,15 +206,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
                                 result = evaluateScript(intresult);
                             default:
                                 output.append(" if=else: ").append(result).append(";\n");
-                                list.add(result);
-                                return list;
+                                return result;
                         }
                     }
                 }
             } catch (NoSuchElementException ex) {
                 output.append(" if=").append(result).append(";\n");
-                list.add(result);
-                return list;
+                return result;
             }
         }));
 
@@ -234,7 +229,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             //Reading the cycle body string
             String action = readOpNode(node.getChildren().get(3));
             //Result
-            String result = null;
+            TclList result = null;
             //The first evaluation of the conditional expression
             String condition = evaluateExpression(conString, node);
             //The main cycle
@@ -248,9 +243,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Writing the body evaluation condition as the output
             output.append(" 'for' expression=").append(result).append(";\n");
-            TclList list = new TclList();
-            list.add(result);
-            return list;
+            return result;
         }));
 
         /*
@@ -261,7 +254,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             String conString = readOpNode(node.getChildren().get(0));
             String action = readOpNode(node.getChildren().get(1));
             //Result
-            String result = null;
+            TclList result = null;
             //The first evaluation of the conditional expression
             String condition = evaluateExpression(conString, node);
             //The main cycle
@@ -273,9 +266,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Writing the body evaluation condition as the output
             output.append(" 'while' expression=").append(result).append(";\n");
-            TclList list = new TclList();
-            list.add(result);
-            return list;
+            return result;
         }));
 
         /*
@@ -492,6 +483,24 @@ public class TclInterpreter extends AbstractTclInterpreter {
             output.append("Element of the '").append(name).append("' list = ").append(result).append(";\n");
             return tlist;
         }));
+
+        /*
+        'llength' command - the lenght of a list
+         */
+        COMMANDS.put("llength", new GenericTclCommand("llength", 1, (TclCommand<TclNode, TclList>) (TclNode node) -> {
+            //List's name
+            String name = readOpNode(node.getChildren().get(0));
+            //List's content
+            List<String> list = context.getList(name);
+            String result = null;
+            if (list != null) {
+                result = Integer.toString(list.size());
+            }
+            TclList tlist = new TclList();
+            tlist.add(result);
+            output.append("The lenght of the '").append(name).append("' list = ").append(result).append(";\n");
+            return tlist;
+        }));
     }
 
     /**
@@ -502,7 +511,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
      */
     protected TclList executeCommand(TclNode command) throws TclExecutionException {
-        //output.append("\n");
+        //Calling the Tcl command or throwing an error if it is not defined
+        TclCommand cmd = COMMANDS.get(command.getValue());
+        if (cmd == null) {
+            throw new TclExecutionException("The command " + command.getValue() + " is not defined!", command);
+        }
         return COMMANDS.get(command.getValue()).apply(command);
     }
 
@@ -619,21 +632,20 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @param script
      * @return
      */
-    protected String evaluateScript(String script) {
+    protected TclList evaluateScript(String script) {
         //Creating a new instance of Tcl interpreter with the same context
         AbstractTclInterpreter subinterpreter
                 = new TclInterpreter(new TclParser(new TclLexer(script)), context, false);
-        String result = null;
         //Evaluating the script and catch errors that appear
         try {
-            result = subinterpreter.run();
+            subinterpreter.run();
         } catch (AbstractTclParser.TclParserError ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         } catch (AbstractTclInterpreter.TclExecutionException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         }
         output.append("[").append(subinterpreter.getOutput()).append("]\n");
-        return result;
+        return subinterpreter.getRlist();
     }
 
     /**
@@ -648,7 +660,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         TclList res, lastResult = null;
         for (TclNode node : chld) {
             res = executeCommand(node);
-            lastResult = (res.size() == 0) ? lastResult : res;
+            lastResult = res.isEmpty() ? lastResult : res;
         }
         return lastResult;
     }
@@ -664,7 +676,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
     public String run() throws TclParser.TclParserError, TclExecutionException {
         TclNode root = parser.parse();
         output.append("Executing ").append(root.getValue()).append(":\n");
-        return executeProgram(root).toString();
+        rlist = executeProgram(root);
+        return rlist.toString();
     }
 
     /**
@@ -750,4 +763,5 @@ public class TclInterpreter extends AbstractTclInterpreter {
         }
         return lst;
     }
+
 }
