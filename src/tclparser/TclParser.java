@@ -14,9 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tclinterpreter;
+package tclparser;
 
+import tcllexer.TclLexer;
+import tcllexer.TclStringLexer;
 import java.util.List;
+import tcllexer.TclTokenType;
 
 /**
  * A class for the Tcl parser which converts the token stream into a tree

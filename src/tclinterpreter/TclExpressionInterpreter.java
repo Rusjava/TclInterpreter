@@ -16,6 +16,9 @@
  */
 package tclinterpreter;
 
+import tclparser.TclNode;
+import tclparser.TclExpressionParser;
+import tclparser.AbstractTclParser;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;

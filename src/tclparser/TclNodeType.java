@@ -14,13 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tclinterpreter;
+package tclparser;
 
 /**
  * An enumeration for Tcl node types
  *
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  */
 public enum TclNodeType {
 
@@ -35,6 +35,7 @@ public enum TclNodeType {
     STRING("CS"),
     OPERAND("OP"),
     NAME("id"),
+    LIST("tcl list"),
     WORD("word");
 
     private final String type;

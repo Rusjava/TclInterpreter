@@ -16,6 +16,14 @@
  */
 package tclinterpreter;
 
+import tclparser.TclNode;
+import tclparser.TclExpressionParser;
+import tclparser.AbstractTclParser;
+import tclparser.TclStringParser;
+import tclparser.TclParser;
+import tcllexer.TclLexer;
+import tcllexer.TclExpressionLexer;
+import tcllexer.TclStringLexer;
 import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;

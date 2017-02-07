@@ -16,6 +16,8 @@
  */
 package tclinterpreter;
 
+import tclparser.TclNode;
+
 /**
  * General class for Tcl commands implementing TclCommand interface
  *

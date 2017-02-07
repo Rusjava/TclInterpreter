@@ -14,10 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tclinterpreter;
+package tcllexer;
 
 /**
- * Basic abstract class for Tcl lexers
+ * Basic abstract class for all Tcl lexers
  *
  * @author Ruslan Feshchenko
  * @version 0.1

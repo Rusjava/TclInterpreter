@@ -16,6 +16,8 @@
  */
 package tclinterpreter;
 
+import tclparser.TclNode;
+import tclparser.AbstractTclParser;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package tclinterpreter;
+package tclparser;
 
 import java.util.ArrayList;
 import java.util.List;
