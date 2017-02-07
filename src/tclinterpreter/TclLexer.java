@@ -163,7 +163,7 @@ public class TclLexer extends AbstractTclLexer {
             advancePosition();
             return new TclToken(TclTokenType.CMT).setValue(readComment());
         } else if ((peekback() == '"' && qflag)
-                || peekback() == '{' || peekback() == '[' || peekback() == '(') {
+                || peekback() == '{' || peekback() == '[') {
             /*
              Reading and returning a string of symbols
              */
