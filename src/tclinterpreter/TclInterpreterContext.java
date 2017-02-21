@@ -44,11 +44,6 @@ public class TclInterpreterContext {
     protected Map<String, Map<String, String>> arrays;
 
     /**
-     * Local lists associated with the context
-     */
-    protected Map<String, List<String>> lists;
-
-    /**
      * Constructor
      *
      * @param uppercontext the upper level context
@@ -56,7 +51,6 @@ public class TclInterpreterContext {
     public TclInterpreterContext(TclInterpreterContext uppercontext) {
         variables = new HashMap<>();
         arrays = new HashMap<>();
-        lists = new HashMap<>();
         this.upperlevelcontext = uppercontext;
     }
 
@@ -77,15 +71,6 @@ public class TclInterpreterContext {
     public Map<String, Map<String, String>> getArrays() {
         return arrays;
     }
-    
-    /**
-     * Returning the lists map
-     *
-     * @return
-     */
-    public Map<String, List<String>> getLists() {
-        return lists;
-    }
 
     /**
      * Returning the context of the enclosing Tcl interpreter
@@ -104,16 +89,6 @@ public class TclInterpreterContext {
      */
     public String getVaribale(String name) {
         return variables.get(name);
-    }
-    
-    /**
-     * Getting a particular local list
-     *
-     * @param name list name
-     * @return
-     */
-    public List<String> getList(String name) {
-        return lists.get(name);
     }
 
     /**
@@ -134,15 +109,6 @@ public class TclInterpreterContext {
      */
     public void deleteVaribale(String name) {
         variables.remove(name);
-    }
-    
-    /**
-     * Deleting a particular local list
-     *
-     * @param name list name
-     */
-    public void deleteList(String name) {
-        lists.remove(name);
     }
 
     /**
@@ -171,16 +137,6 @@ public class TclInterpreterContext {
         variables.put(name, value);
     }
     
-    /**
-     * Setting a particular local list
-     *
-     * @param name list name
-     * @param list to be set
-     */
-    public void setList(String name, List<String> list) {
-        lists.put(name, list);
-    }
-
     /**
      * Setting the value of a particular element of a local array
      *

@@ -24,12 +24,12 @@ import tclparser.TclNode;
  * @author Ruslan Feshchenko
  * @version 0.1
  */
-public class GenericTclCommand implements TclCommand<TclNode, TclList> {
+public class GenericTclCommand implements TclCommand<TclNode, String> {
 
     /**
      * Tcl command body
      */
-    protected TclCommand<TclNode, TclList> command;
+    protected TclCommand<TclNode, String> command;
 
     /**
      * Minimal number of argument
@@ -48,7 +48,7 @@ public class GenericTclCommand implements TclCommand<TclNode, TclList> {
      * @param argNumber
      * @param command
      */
-    public GenericTclCommand(String name, int argNumber, TclCommand<TclNode, TclList> command) {
+    public GenericTclCommand(String name, int argNumber, TclCommand<TclNode, String> command) {
         this.name = name;
         this.argNumber = argNumber;
         this.command = command;
@@ -68,11 +68,11 @@ public class GenericTclCommand implements TclCommand<TclNode, TclList> {
      * present
      *
      * @param node
-     * @return
+     * @return the result of the command's execution
      * @throws AbstractTclInterpreter.TclExecutionException
      */
     @Override
-    public TclList apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
+    public String apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException {
         if (command == null) {
             return null;
         }

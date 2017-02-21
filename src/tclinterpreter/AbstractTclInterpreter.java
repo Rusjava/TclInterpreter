@@ -49,11 +49,6 @@ public abstract class AbstractTclInterpreter {
      * level context and attributes
      */
     protected TclInterpreterContext context;
-    
-    /**
-     * The command result
-     */
-    protected TclList rlist = null;
 
     /**
      * A full constructor with output stream
@@ -147,13 +142,6 @@ public abstract class AbstractTclInterpreter {
      */
     public String getOutput() {
         return output.toString();
-    }
-
-    /**
-     * @return the rlist
-     */
-    public TclList getRlist() {
-        return rlist;
     }
 
     /**
