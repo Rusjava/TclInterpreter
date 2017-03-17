@@ -115,7 +115,7 @@ public class TclList extends ArrayList<String> {
                         }
                         cnt++;
                     }
-                    //If whitespace, add an element to the list, skip whitespace and start a new element
+                    //If a split char, add an element to the list, skip the split char and start a new element
                 } else if (isSplitCh(sList.charAt(cnt), splCh)) {
                     list.add(el.toString());
                     el = new StringBuilder();

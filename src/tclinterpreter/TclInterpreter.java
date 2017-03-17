@@ -91,15 +91,15 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("eof", new GenericTclCommand("set", 0, (TclCommand<TclNode, String>) (TclNode node) -> {
             return null;
         }));
-        
+
         /*
-         'Set' command definition
+         'set' command definition
          */
         COMMANDS.put("set", new GenericTclCommand("set", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value;
             String index = null;
             String name = readOpNode(node.getChildren().get(0));
-            //Checking if the tlist is the variable of array id
+            //Checking if 'name' is the variable of array id
             if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
                 index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
                 name = name.substring(0, name.lastIndexOf('('));
@@ -114,40 +114,88 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     context.setArrayElement(name, index, value);
                     output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
-            } else //If only one operand, read and return the variable or array element
-            {
-                if (index == null) {
-                    value = context.getVaribale(name);
-                    output.append(" ").append(name).append("=").append(value).append(";\n");
-                } else {
-                    value = context.getArrayElement(name, index);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
-                }
+            } else if (index == null) {
+                //If only one operand, read and return the variable or array element
+                value = context.getVaribale(name);
+                output.append(" ").append(name).append("=").append(value).append(";\n");
+            } else {
+                value = context.getArrayElement(name, index);
+                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             return value;
         }));
 
         /*
-         'Unset' command definition
+         'append' command definition
+         */
+        COMMANDS.put("append", new GenericTclCommand("append", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String value;
+            String index = null;
+            String name = readOpNode(node.getChildren().get(0));
+            //Checking if 'name' is the variable or array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
+            }
+            //Getting variable or array element value
+            if (index == null) {
+                value = context.getVaribale(name);
+                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
+            } else {
+                value = context.getArrayElement(name, index);
+                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+            }
+            //If there are arguments then append them
+            if (node.getChildren().size() >= 2) {
+                StringBuilder appStr = new StringBuilder();
+                //If the variable or array element does not exist assign null length string
+                if (value != null) {
+                    appStr.append(value);
+                }
+                //Appending arguments
+                for (int i = 1; i < node.getChildren().size(); i++) {
+                    appStr.append(readOpNode(node.getChildren().get(i)));
+                }
+                value = appStr.toString();
+                //Setting new variable or array element value
+                if (index == null) {
+                    context.setVaribale(name, value);
+                } else {
+                    context.setArrayElement(name, index, value);
+                }
+            }
+            //Outputting the final value of the variable
+            if (index == null) {
+                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
+            } else {
+                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+            }
+
+            return value;
+        }));
+
+        /*
+         'unset' command definition
          */
         COMMANDS.put("unset", new GenericTclCommand("unset", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
-            String index = null;
+            String index = null, value;
             String name = readOpNode(node.getChildren().get(0));
             //Checking if the tlist is the variable of array id
             if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
                 index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
                 name = name.substring(0, name.lastIndexOf('('));
             }
-            //Checking if a variable of an array element needs to removed
+            //Checking if a variable or an array element needs to removed
             if (index == null) {
+                value = context.getVaribale(name);
                 context.deleteVaribale(name);
                 output.append(" ").append(name).append("=").append("undefined;");
-                return context.getVaribale(name);
             } else {
+                value = context.getArrayElement(name, index);
                 context.deleteArrayElement(name, index);
                 output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
-                return context.getArrayElement(name, index);
             }
+            return value;
         }));
 
         /*
@@ -453,9 +501,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
         COMMANDS.put("list", new GenericTclCommand("list", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             StringBuilder result = new StringBuilder();
             //Adding all 'list' command arguments to the list
-            for (TclNode arg : node.getChildren()) {
+            node.getChildren().stream().forEach((arg) -> {
                 result.append(" {").append(readOpNode(arg)).append("}");
-            }
+            });
             output.append("List: ").append(result).append(";\n");
             //Removing leading space
             if (result.length() != 0) {
@@ -523,6 +571,54 @@ public class TclInterpreter extends AbstractTclInterpreter {
             output.append("The string '").append(tlist).append("' was split into ").append(list).append(";\n");
             return list.toString();
         }));
+
+        /*
+         'lappend' command definition
+         */
+        COMMANDS.put("lappend", new GenericTclCommand("lappend", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+            String value;
+            String index = null;
+            String name = readOpNode(node.getChildren().get(0));
+            //Checking if 'name' is the variable or array id
+            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+                name = name.substring(0, name.lastIndexOf('('));
+            }
+            //Getting the list variable or array element value
+            if (index == null) {
+                value = context.getVaribale(name);
+                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
+            } else {
+                value = context.getArrayElement(name, index);
+                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+            }
+            //If at least two operands, append them to the list variable or array element (with a space)
+            if (node.getChildren().size() >= 2) {
+                //If the list variable or array element does not exist assign null length string
+                StringBuilder appStr = new StringBuilder();
+                if (value != null) {
+                    appStr.append(value);
+                }
+                for (int i = 1; i < node.getChildren().size(); i++) {
+                    appStr.append(" ").append(readOpNode(node.getChildren().get(i)));
+                }
+                value = appStr.toString();
+                //Setting new list variable or array element value
+                if (index == null) {
+                    context.setVaribale(name, value);
+                } else {
+                    context.setArrayElement(name, index, value);
+                }
+            }
+            //Outputting the final value of the varibale or array element
+            if (index == null) {
+                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
+            } else {
+                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+            }
+            return value;
+        }));
+
     }
 
     /**
@@ -584,7 +680,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
             name = name.substring(0, name.lastIndexOf('('));
         }
-        //Reading either the variable of an array element 
+        //Reading either the variable or an array element 
         if (index == null) {
             return context.getVaribale(name);
         } else {
