@@ -88,14 +88,14 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          Empty command
          */
-        COMMANDS.put("eof", new GenericTclCommand("set", 0, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("eof", new OldGenericTclCommand("eof", 0, (TclCommand<TclNode, String>) (TclNode node) -> {
             return null;
         }));
 
         /*
          'set' command definition
          */
-        COMMANDS.put("set", new GenericTclCommand("set", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("set", new OldGenericTclCommand("set", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value;
             String index = null;
             String name = readOpNode(node.getChildren().get(0));
@@ -128,7 +128,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'append' command definition
          */
-        COMMANDS.put("append", new GenericTclCommand("append", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("append", new OldGenericTclCommand("append", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value;
             String index = null;
             String name = readOpNode(node.getChildren().get(0));
@@ -177,7 +177,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'unset' command definition
          */
-        COMMANDS.put("unset", new GenericTclCommand("unset", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("unset", new OldGenericTclCommand("unset", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             String index = null, value;
             String name = readOpNode(node.getChildren().get(0));
             //Checking if the tlist is the variable of array id
@@ -201,7 +201,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'Puts' command definition
          */
-        COMMANDS.put("puts", new GenericTclCommand("puts", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("puts", new OldGenericTclCommand("puts", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value = readOpNode(node.getChildren().get(0));
             out.append("Tcl> ")
                     .append(value)
@@ -213,7 +213,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'Expr' command definition
          */
-        COMMANDS.put("expr", new GenericTclCommand("expr", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("expr", new OldGenericTclCommand("expr", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             //The second round of substitutions
             String result = evaluateExpression(readOpNode(node.getChildren().get(0)), node);
             //Creating output
@@ -223,7 +223,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'if' command definition
          */
-        COMMANDS.put("if", new GenericTclCommand("if", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("if", new OldGenericTclCommand("if", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             String result = null;
             String intresult;
             //Creating an iterator over the list of arguments
@@ -269,7 +269,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'for' command definition
          */
-        COMMANDS.put("for", new GenericTclCommand("for", 4, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("for", new OldGenericTclCommand("for", 4, (TclCommand<TclNode, String>) (TclNode node) -> {
             //Reading, parsing and interprerting the first expression
             evaluateScript(readOpNode(node.getChildren().get(0)));
             //Reading the condition string
@@ -299,7 +299,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'while' cycle command definition
          */
-        COMMANDS.put("while", new GenericTclCommand("while", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("while", new OldGenericTclCommand("while", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             //Reading the conditional string and the cycle body
             String conString = readOpNode(node.getChildren().get(0));
             String action = readOpNode(node.getChildren().get(1));
@@ -322,7 +322,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'string' command definition
          */
-        COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("string", new OldGenericTclCommand("string", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             //Variable for the result
             String result = null;
             int i = 0, k;
@@ -435,7 +435,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'format' command definition - formatted output to a string
          */
-        COMMANDS.put("format", new GenericTclCommand("format", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("format", new OldGenericTclCommand("format", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             //Variable for the result
             String result = null;
             int i;
@@ -498,7 +498,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
         'list' command - creating a Tcl list
          */
-        COMMANDS.put("list", new GenericTclCommand("list", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("list", new OldGenericTclCommand("list", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             StringBuilder result = new StringBuilder();
             //Adding all 'list' command arguments to the list
             node.getChildren().stream().forEach((arg) -> {
@@ -515,7 +515,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
         'lindex' command - an element of the list at 'index' position
          */
-        COMMANDS.put("lindex", new GenericTclCommand("lindex", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("lindex", new OldGenericTclCommand("lindex", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             //List's tlist
             String tlist = readOpNode(node.getChildren().get(0));
             //List's content
@@ -547,7 +547,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
         'llength' command - the lenght of a list
          */
-        COMMANDS.put("llength", new GenericTclCommand("llength", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("llength", new OldGenericTclCommand("llength", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             //List's tlist
             String tlist = readOpNode(node.getChildren().get(0));
             //List's content
@@ -563,7 +563,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
         'split' command - splitting a string into a space separated list using specified characters
          */
-        COMMANDS.put("split", new GenericTclCommand("split", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("split", new OldGenericTclCommand("split", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             //List's tlist
             String tlist = readOpNode(node.getChildren().get(0));
             //List's content
@@ -575,7 +575,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         /*
          'lappend' command definition
          */
-        COMMANDS.put("lappend", new GenericTclCommand("lappend", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
+        COMMANDS.put("lappend", new OldGenericTclCommand("lappend", 2, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value;
             String index = null;
             String name = readOpNode(node.getChildren().get(0));
@@ -627,8 +627,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @param command
      * @return the result of a command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
+     * @throws tclinterpreter.AbstractTclInterpreter.TclCommandException
      */
-    protected String executeCommand(TclNode command) throws TclExecutionException {
+    protected String executeCommand(TclNode command) throws TclExecutionException, TclCommandException {
         //Calling the Tcl command or throwing an error if it is not defined
         TclCommand cmd = COMMANDS.get(command.getValue());
         if (cmd == null) {
@@ -758,7 +759,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
         //Evaluating the script and catch errors that appear
         try {
             result = subinterpreter.run();
-        } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException ex) {
+        } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException | AbstractTclInterpreter.TclCommandException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         }
         output.append("[").append(subinterpreter.getOutput()).append("]\n");
@@ -771,8 +772,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @param program node
      * @return the result of the last command
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
+     * @throws tclinterpreter.AbstractTclInterpreter.TclCommandException
      */
-    protected String executeProgram(TclNode program) throws TclExecutionException {
+    protected String executeProgram(TclNode program) throws TclExecutionException, TclCommandException {
         List<TclNode> chld = program.getChildren();
         String res, lastResult = null;
         for (TclNode node : chld) {
@@ -788,9 +790,10 @@ public class TclInterpreter extends AbstractTclInterpreter {
      * @return
      * @throws tclparser.AbstractTclParser.TclParserError
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
+     * @throws tclinterpreter.AbstractTclInterpreter.TclCommandException
      */
     @Override
-    public String run() throws TclParser.TclParserError, TclExecutionException {
+    public String run() throws TclParser.TclParserError, TclExecutionException, TclCommandException {
         TclNode root = parser.parse();
         output.append("Executing ").append(root.getValue()).append(":\n");
         return executeProgram(root);

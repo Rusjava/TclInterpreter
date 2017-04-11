@@ -67,7 +67,8 @@ public enum TclTokenType {
     WHITESPACE("space"),
     EOF("eof"),
     CMT("comment"),
-    UNKNOWN("unknown");
+    UNKNOWN("unknown"),
+    NULL("null token");
     
     private final String type;
     /*

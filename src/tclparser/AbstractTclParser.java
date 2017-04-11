@@ -23,17 +23,13 @@ import tcllexer.AbstractTclLexer;
 /**
  *
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  */
 public abstract class AbstractTclParser {
-    /**
-     * The current Tcl token
-     */
-    protected TclToken currenttoken = null;
-    /**
-     * The previous Tcl token
-     */
-    protected TclToken previoustoken = null;
+
+    protected TclToken currenttoken;
+
+    protected TclToken previoustoken;
     /**
      * The associated TclLexer
      */
@@ -45,6 +41,8 @@ public abstract class AbstractTclParser {
      */
     public AbstractTclParser(AbstractTclLexer lexer) {
         super();
+        this.previoustoken = new TclToken(TclTokenType.NULL);
+        this.currenttoken = new TclToken(TclTokenType.NULL);
         this.lexer = lexer;
     }
 
@@ -52,7 +50,7 @@ public abstract class AbstractTclParser {
      * Advancing to the next token. Throwing and exception if a wrong token
      *
      * @param type
-     * @throws tclinterpreter.TclParser.TclParserError
+     * @throws tclparser.AbstractTclParser.TclParserError
      */
     protected void advanceToken(TclTokenType type) throws TclParser.TclParserError {
         previoustoken = currenttoken;
@@ -66,9 +64,10 @@ public abstract class AbstractTclParser {
      * Advancing to the next token. Throwing and exception if a wrong token
      *
      * @param types
-     * @throws tclinterpreter.TclParser.TclParserError
+     * @throws tclparser.AbstractTclParser.TclParserError
      */
     protected void advanceToken(TclTokenType... types) throws TclParser.TclParserError {
+        previoustoken = currenttoken;
         currenttoken = lexer.getToken();
         boolean flag = true;
         for (TclTokenType type : types) {
@@ -84,7 +83,7 @@ public abstract class AbstractTclParser {
      * and other node types
      *
      * @return
-     * @throws tclinterpreter.TclParser.TclParserError
+     * @throws tclparser.AbstractTclParser.TclParserError
      */
     public abstract TclNode parse() throws TclParser.TclParserError;
     

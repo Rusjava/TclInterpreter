@@ -20,7 +20,7 @@ package tclinterpreter;
  * An interface for Tcl command objects
  * 
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  * @param <T> the class for the argument
  * @param <R> the class of the return value
  */
@@ -32,7 +32,8 @@ public interface TclCommand<T, R> {
      * @param node
      * @return
      * @throws tclinterpreter.AbstractTclInterpreter.TclExecutionException
+     * @throws tclinterpreter.AbstractTclInterpreter.TclCommandException
      */
-    public R apply(T node) throws AbstractTclInterpreter.TclExecutionException;
+    public R apply(T node) throws AbstractTclInterpreter.TclExecutionException, AbstractTclInterpreter.TclCommandException;
     
 }

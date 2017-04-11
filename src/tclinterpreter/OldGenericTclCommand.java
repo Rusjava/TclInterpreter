@@ -16,18 +16,20 @@
  */
 package tclinterpreter;
 
+import tclparser.TclNode;
+
 /**
- * General class for string based Tcl commands implementing TclCommand interface
+ * General class for Tcl commands implementing TclCommand interface
  *
  * @author Ruslan Feshchenko
  * @version 0.2
  */
-public class GenericTclCommand implements TclCommand<String[], String> {
+public class OldGenericTclCommand implements TclCommand<TclNode, String> {
 
     /**
      * Tcl command body
      */
-    protected TclCommand<String[], String> command;
+    protected TclCommand<TclNode, String> command;
 
     /**
      * Minimal number of argument
@@ -46,7 +48,7 @@ public class GenericTclCommand implements TclCommand<String[], String> {
      * @param argNumber
      * @param command
      */
-    public GenericTclCommand(String name, int argNumber, TclCommand<String[], String> command) {
+    public OldGenericTclCommand(String name, int argNumber, TclCommand<TclNode, String> command) {
         this.name = name;
         this.argNumber = argNumber;
         this.command = command;
@@ -61,35 +63,30 @@ public class GenericTclCommand implements TclCommand<String[], String> {
         return name;
     }
 
-    @Override
-    public String toString() {
-        return name + " command";
-    }
-
     /**
      * Applying command and checking that the correct number of arguments is
      * present
      *
-     * @param args
+     * @param node
      * @return the result of the command's execution
      */
     @Override
-    public String apply(String... args) throws AbstractTclInterpreter.TclCommandException, AbstractTclInterpreter.TclExecutionException {
+    public String apply(TclNode node) throws AbstractTclInterpreter.TclExecutionException, AbstractTclInterpreter.TclCommandException {
         if (command == null) {
             return null;
         }
         //If at least argNumber operand, process the 'while' cycle
-        if (args.length >= argNumber) {
+        if (node.getChildren().size() >= argNumber) {
             try {
-                return command.apply(args);
+                return command.apply(node);
             } catch (IndexOutOfBoundsException ex) {
-                throw new AbstractTclInterpreter.TclCommandException("Insufficient number of operands in '"
-                        + name + "' command!", command);
+                throw new AbstractTclInterpreter.TclExecutionException("Insufficient number of operands in '"
+                        + name + "' command!", node);
             }
         } else {
             //If less than argNumber operands, throw an error
-            throw new AbstractTclInterpreter.TclCommandException(name
-                    + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", command);
+            throw new AbstractTclInterpreter.TclExecutionException(name
+                    + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", node);
         }
     }
 }
