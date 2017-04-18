@@ -79,8 +79,8 @@ public class TclExpressionParser extends AbstractTclParser {
      * Returning an argument of an exponetial operation
      *
      * @return
-     * @throws tclinterpreter.AbstractTclParser.TclParserError
-     * @throws tclinterpreter.TclExpressionParser.UnbalancedParenthesesException
+     * @throws AbstractTclParser.TclParserError
+     * @throws TclExpressionParser.UnbalancedParenthesesException
      */
     protected TclNode getFactor() throws TclParserError, UnbalancedParenthesesException {
         TclNode node = null;

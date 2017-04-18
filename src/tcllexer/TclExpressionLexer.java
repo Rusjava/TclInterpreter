@@ -17,7 +17,7 @@
 package tcllexer;
 
 /**
- * A special lexer class for expressions
+ * A special Lexer class for expressions
  *
  * @author Ruslan Feshchenko
  * @version 0.1

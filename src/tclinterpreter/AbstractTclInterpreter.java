@@ -32,23 +32,23 @@ public abstract class AbstractTclInterpreter {
     /**
      * A print stream for interpreter output and errors
      */
-    protected PrintStream out;
+    private PrintStream out;
 
     /**
      * A string for the script output
      */
-    protected StringBuilder output = new StringBuilder("");
+    private StringBuilder output = new StringBuilder("");
 
     /**
      * Current parser
      */
-    protected AbstractTclParser parser;
+    private AbstractTclParser parser;
 
     /**
      * The local context, which includes variables, the pointer to the upper
      * level context and attributes
      */
-    protected TclInterpreterContext context;
+    private TclInterpreterContext context;
 
     /**
      * A full constructor with output stream
@@ -61,7 +61,8 @@ public abstract class AbstractTclInterpreter {
      * @param out an output stream
      * @param encoding an encoding to be used for output encoding
      */
-    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, OutputStream out, String encoding) {
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, 
+            OutputStream out, String encoding) {
         this.parser = parser;
         if (newcontext) {
             this.context = new TclInterpreterContext(context);
@@ -85,7 +86,8 @@ public abstract class AbstractTclInterpreter {
      * context used
      * @param out an output stream
      */
-    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, PrintStream out) {
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, 
+            PrintStream out) {
         this.parser = parser;
         if (newcontext) {
             this.context = new TclInterpreterContext(context);
@@ -109,20 +111,11 @@ public abstract class AbstractTclInterpreter {
     }
 
     /**
-     * Method, which sets up script
-     *
-     * @param parser
-     */
-    public void setParser(AbstractTclParser parser) {
-        this.parser = parser;
-    }
-
-    /**
      * Returning Tcl parser used
      *
      * @return
      */
-    public AbstractTclParser getParser() {
+    public final AbstractTclParser getParser() {
         return parser;
     }
 
@@ -141,8 +134,24 @@ public abstract class AbstractTclInterpreter {
      *
      * @return
      */
-    public String getOutput() {
-        return output.toString();
+    public final StringBuilder getOutput() {
+        return output;
+    }
+
+    /**
+     * Getting the Tcl interpreter context
+     * @return the context
+     */
+    public final TclInterpreterContext getContext() {
+        return context;
+    }
+
+    /**
+     * Returning the default output stream
+     * @return the out
+     */
+    public final PrintStream getOut() {
+        return out;
     }
 
     /**

@@ -66,7 +66,7 @@ public class TclListParser extends AbstractTclParser {
         //Beginng a new list
         newList = true;
         TclNode node = new TclNode(TclNodeType.LIST);
-        node.setValue("eof");
+        node.setValue("null");
         TclNode operand = null;
         try {
             /*

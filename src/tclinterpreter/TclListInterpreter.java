@@ -20,8 +20,6 @@ import tclparser.TclNode;
 import tclparser.TclExpressionParser;
 import tclparser.AbstractTclParser;
 import tclparser.TclStringParser;
-import tclparser.TclParser;
-import tcllexer.TclLexer;
 import tcllexer.TclExpressionLexer;
 import tcllexer.TclStringLexer;
 import java.io.OutputStream;
@@ -29,17 +27,18 @@ import java.nio.file.FileSystems;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.Formatter;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
-import java.util.Map;
 import java.util.MissingFormatArgumentException;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import tcllexer.TclLexer;
+import tclparser.TclListParser;
 
 /**
  * This class interpretes Tcl scripts as collections of lists
@@ -50,12 +49,6 @@ import java.util.logging.Logger;
 public class TclListInterpreter extends AbstractTclInterpreter {
 
     /**
-     * A map containing all Tcl commands
-     *
-     */
-    public final Map<String, TclCommand<String[], String>> COMMANDS = new HashMap<>();
-
-    /**
      * Constructor, which sets up the interpreter with an attached parser
      *
      * @param parser
@@ -63,8 +56,9 @@ public class TclListInterpreter extends AbstractTclInterpreter {
      * pointer
      * @param newcontext Should a new context be created
      */
-    public TclListInterpreter(TclParser parser, TclInterpreterContext context, boolean newcontext) {
+    public TclListInterpreter(TclListParser parser, TclInterpreterContext context, boolean newcontext) {
         super(parser, context, newcontext);
+        getOutput().append("Executing script:\n");
     }
 
     /**
@@ -78,8 +72,9 @@ public class TclListInterpreter extends AbstractTclInterpreter {
      * @param out an output stream
      * @param encoding an encoding to be used for output encoding
      */
-    public TclListInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, OutputStream out, String encoding) {
+    public TclListInterpreter(TclListParser parser, TclInterpreterContext context, boolean newcontext, OutputStream out, String encoding) {
         super(parser, context, newcontext, out, encoding);
+        getOutput().append("Executing script:\n");
     }
 
     /**
@@ -89,56 +84,24 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         /*
          'set' command definition
          */
-        COMMANDS.put("set", new GenericTclCommand("set", 1, (TclCommand<String[], String>) (String... args) -> {
-            String value;
-            String index = null;
-            String name = args[0];
-            //Checking if 'name' is the variable of array id
-            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                name = name.substring(0, name.lastIndexOf('('));
-            }
+        getContext().addCommand("set", new GenericTclCommand("set", 1, (TclCommand<String[], String>) (String... args) -> {
             if (args.length >= 2) {
                 //If at least two operands, set the variable or array element
-                value = args[1];
-                if (index == null) {
-                    context.setVaribale(name, value);
-                    output.append(" ").append(name).append("=").append(value).append(";\n");
-                } else {
-                    context.setArrayElement(name, index, value);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
-                }
-            } else if (index == null) {
-                //If only one operand, read and return the variable or array element
-                value = context.getVaribale(name);
-                output.append(" ").append(name).append("=").append(value).append(";\n");
+                getContext().setElement(args[0], args[1]);
+                return args[1];
             } else {
-                value = context.getArrayElement(name, index);
-                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                //If only one operand, read and return the variable or array element
+                return getContext().getElement(args[0]);
             }
-            return value;
         }));
 
         /*
          'append' command definition
          */
-        COMMANDS.put("append", new GenericTclCommand("append", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("append", new GenericTclCommand("append", 2, (TclCommand<String[], String>) (String... args) -> {
             String value;
-            String index = null;
-            String name = args[0];
-            //Checking if 'name' is the variable or array id
-            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                name = name.substring(0, name.lastIndexOf('('));
-            }
-            //Getting variable or array element value
-            if (index == null) {
-                value = context.getVaribale(name);
-                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
-            } else {
-                value = context.getArrayElement(name, index);
-                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
-            }
+            //Getting variable or array element result
+            value = getContext().getElement(args[0]);
             //If there are arguments then append them
             if (args.length >= 2) {
                 StringBuilder appStr = new StringBuilder();
@@ -151,72 +114,42 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                     appStr.append(args[i]);
                 }
                 value = appStr.toString();
-                //Setting new variable or array element value
-                if (index == null) {
-                    context.setVaribale(name, value);
-                } else {
-                    context.setArrayElement(name, index, value);
-                }
+                //Setting new variable or array element result
+                getContext().setElement(args[0], value);
             }
-            //Outputting the final value of the variable
-            if (index == null) {
-                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
-            } else {
-                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
-            }
-
             return value;
         }));
 
         /*
          'unset' command definition
          */
-        COMMANDS.put("unset", new GenericTclCommand("unset", 1, (TclCommand<String[], String>) (String... args) -> {
-            String index = null, value;
-            String name = args[0];
-            //Checking if the tlist is the variable of array id
-            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                name = name.substring(0, name.lastIndexOf('('));
-            }
-            //Checking if a variable or an array element needs to removed
-            if (index == null) {
-                value = context.getVaribale(name);
-                context.deleteVaribale(name);
-                output.append(" ").append(name).append("=").append("undefined;");
-            } else {
-                value = context.getArrayElement(name, index);
-                context.deleteArrayElement(name, index);
-                output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
-            }
+        getContext().addCommand("unset", new GenericTclCommand("unset", 1, (TclCommand<String[], String>) (String... args) -> {
+            String value = getContext().getElement(args[0]);
+            getContext().deleteElement(args[0]);
             return value;
         }));
 
         /*
          'Puts' command definition
          */
-        COMMANDS.put("puts", new GenericTclCommand("puts", 1, (TclCommand<String[], String>) (String... args) -> {
-            out.append("Tcl> ")
+        getContext().addCommand("puts", new GenericTclCommand("puts", 1, (TclCommand<String[], String>) (String... args) -> {
+            getOut().append("Tcl> ")
                     .append(args[0])
                     .append("\n");
-            output.append(" output: ").append(args[0]).append(";\n");
             return args[0];
         }));
 
         /*
          'Expr' command definition
          */
-        COMMANDS.put("expr", new GenericTclCommand("expr", 1, (TclCommand<String[], String>) (String... args) -> {
-            //The second round of substitutions
-            String result = evaluateExpression(args[0]);
-            //Creating output
-            output.append(" expression=").append(result).append(";\n");
-            return result;
+        getContext().addCommand("expr", new GenericTclCommand("expr", 1, (TclCommand<String[], String>) (String... args) -> {
+            return evaluateExpression(args[0]);
         }));
+
         /*
          'if' command definition
          */
-        COMMANDS.put("if", new GenericTclCommand("if", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("if", new GenericTclCommand("if", 2, (TclCommand<String[], String>) (String... args) -> {
             String result = null;
             List<String> argList = Arrays.asList(args);
             String intresult;
@@ -236,7 +169,6 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                     if (readBooleanString(expression) == 1) {
                         //Parsing and interprerting the first body
                         result = evaluateScript(intresult);
-                        output.append(" if=then: ").append(result).append(";\n");
                         return result;
                     } else {
                         intresult = iter.next();
@@ -249,13 +181,11 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                                 intresult = iter.next();
                                 result = evaluateScript(intresult);
                             default:
-                                output.append(" if=else: ").append(result).append(";\n");
                                 return result;
                         }
                     }
                 }
             } catch (NoSuchElementException ex) {
-                output.append(" if=").append(result).append(";\n");
                 return result;
             }
         }));
@@ -263,7 +193,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         /*
          'for' command definition
          */
-        COMMANDS.put("for", new GenericTclCommand("for", 4, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("for", new GenericTclCommand("for", 4, (TclCommand<String[], String>) (String... args) -> {
             //Reading, parsing and interprerting the first expression
             evaluateScript(args[0]);
             //Reading the condition string
@@ -285,15 +215,13 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                 //Evaluating the conditional expression
                 condition = evaluateExpression(conString);
             }
-            //Writing the body evaluation condition as the output
-            output.append(" 'for' expression=").append(result).append(";\n");
             return result;
         }));
 
         /*
          'while' cycle command definition
          */
-        COMMANDS.put("while", new GenericTclCommand("while", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("while", new GenericTclCommand("while", 2, (TclCommand<String[], String>) (String... args) -> {
             //Reading the conditional string and the cycle body
             String conString = args[0];
             String action = args[1];
@@ -308,15 +236,13 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                 //Evaluating the first operand as a conditional expression
                 condition = evaluateExpression(conString);
             }
-            //Writing the body evaluation condition as the output
-            output.append(" 'while' expression=").append(result).append(";\n");
             return result;
         }));
 
         /*
          'string' command definition
          */
-        COMMANDS.put("string", new GenericTclCommand("string", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("string", new GenericTclCommand("string", 2, (TclCommand<String[], String>) (String... args) -> {
             //Variable for the result
             String result = null;
             int i = 0, k;
@@ -418,14 +344,13 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             } catch (NumberFormatException ex) {
                 throw new AbstractTclInterpreter.TclExecutionException("String indexes must be integer numbers!", null);
             }
-            output.append(" string=").append(result).append(";\n");
             return result;
         }));
 
         /*
          'format' command definition - formatted output to a string
          */
-        COMMANDS.put("format", new GenericTclCommand("format", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("format", new GenericTclCommand("format", 2, (TclCommand<String[], String>) (String... args) -> {
             //Variable for the result
             String result = null;
             int i;
@@ -481,19 +406,18 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             } catch (MissingFormatArgumentException ex) {
                 throw new AbstractTclInterpreter.TclExecutionException("The number of formatters exceed the number of arguments!", null);
             }
-            output.append(" formatted string=").append(result).append(";\n");
             return result;
         }));
+
         /*
         'list' command - creating a Tcl list
          */
-        COMMANDS.put("list", new GenericTclCommand("list", 1, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("list", new GenericTclCommand("list", 1, (TclCommand<String[], String>) (String... args) -> {
             StringBuilder result = new StringBuilder();
             //Adding all 'list' command arguments to the list
             Arrays.asList(args).stream().forEach((arg) -> {
                 result.append(" {").append(arg).append("}");
             });
-            output.append("List: ").append(result).append(";\n");
             //Removing leading space
             if (result.length() != 0) {
                 result.deleteCharAt(0);
@@ -504,7 +428,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         /*
         'lindex' command - an element of the list at 'index' position
          */
-        COMMANDS.put("lindex", new GenericTclCommand("lindex", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("lindex", new GenericTclCommand("lindex", 2, (TclCommand<String[], String>) (String... args) -> {
             //List's content
             TclList list = TclList.getList(args[0]);
             String result = null;
@@ -527,54 +451,37 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                     throw new AbstractTclInterpreter.TclExecutionException("The index of a list exceeded list's dimensions!", null);
                 }
             }
-            output.append("Element of the '").append(args[0]).append("' list = ").append(result).append(";\n");
             return result;
         }));
 
         /*
-        'llength' command - the lenght of a list
+        'llength' command - the length of a list
          */
-        COMMANDS.put("llength", new GenericTclCommand("llength", 1, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("llength", new GenericTclCommand("llength", 1, (TclCommand<String[], String>) (String... args) -> {
             //List's content
             TclList list = TclList.getList(args[0]);
             String result = null;
             if (list != null) {
                 result = Integer.toString(list.size());
             }
-            output.append("The lenght of the '").append(args[0]).append("' list = ").append(result).append(";\n");
             return result;
         }));
 
         /*
         'split' command - splitting a string into a space separated list using specified characters
          */
-        COMMANDS.put("split", new GenericTclCommand("split", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("split", new GenericTclCommand("split", 2, (TclCommand<String[], String>) (String... args) -> {
             //List's content
-            TclList list = TclList.splitList(args[0], args[1]);
-            output.append("The string '").append(args[0]).append("' was split into ").append(list).append(";\n");
-            return list.toString();
+            return TclList.splitList(args[0], args[1]).toString();
         }));
 
         /*
          'lappend' command definition
          */
-        COMMANDS.put("lappend", new GenericTclCommand("lappend", 2, (TclCommand<String[], String>) (String... args) -> {
+        getContext().addCommand("lappend", new GenericTclCommand("lappend", 2, (TclCommand<String[], String>) (String... args) -> {
             String value;
-            String index = null;
-            String name = args[0];
-            //Checking if 'name' is the variable or array id
-            if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-                index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-                name = name.substring(0, name.lastIndexOf('('));
-            }
-            //Getting the list variable or array element value
-            if (index == null) {
-                value = context.getVaribale(name);
-                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
-            } else {
-                value = context.getArrayElement(name, index);
-                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
-            }
+            //Getting the list variable or array element result
+            value = getContext().getElement(args[0]);
             //If at least two operands, append them to the list variable or array element (with a space)
             if (args.length >= 2) {
                 //If the list variable or array element does not exist assign null length string
@@ -586,20 +493,21 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                     appStr.append(" ").append(args[i]);
                 }
                 value = appStr.toString();
-                //Setting new list variable or array element value
-                if (index == null) {
-                    context.setVaribale(name, value);
-                } else {
-                    context.setArrayElement(name, index, value);
-                }
-            }
-            //Outputting the final value of the varibale or array element
-            if (index == null) {
-                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
-            } else {
-                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                //Setting new list variable or array element result
+                getContext().setElement(args[0], value);
             }
             return value;
+        }));
+
+        /*
+        'proc' command - creation of a new command
+         */
+        getContext().addCommand("proc", new GenericTclCommand("proc", 3, (TclCommand<String[], String>) (String... args) -> {
+            //List of arguments
+            TclList list = TclList.getList(args[1]);
+            getContext().COMMANDS.put(args[0], new GenericTclCommand(args[0], args[2],
+                    list.toArray(new String[list.size()]), getContext(), getOut()));
+            return null;
         }));
 
     }
@@ -614,7 +522,9 @@ public class TclListInterpreter extends AbstractTclInterpreter {
      */
     protected String interpretList(TclNode listNode) throws AbstractTclInterpreter.TclExecutionException, AbstractTclInterpreter.TclCommandException {
         //Calling the Tcl listNode or throwing an error if it is not defined
-        TclCommand cmd = COMMANDS.get(readOpNode(listNode.getChildren().get(0)));
+        String name = readOpNode(listNode.getChildren().get(0)); //The name of the command
+        TclCommand<String[], String> cmd = getContext().getCommand(name);
+        String result;
         if (cmd == null) {
             throw new AbstractTclInterpreter.TclExecutionException("The command " + listNode.getValue() + " is not defined!", listNode);
         }
@@ -623,11 +533,13 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         for (int i = 0; i < operands.length; i++) {
             operands[i] = readOpNode(listNode.getChildren().get(i + 1));
         }
-        return COMMANDS.get(listNode.getValue()).apply(operands);
+        result = cmd.apply(operands);
+        outputDebugInfo(result, name, operands);
+        return result;
     }
 
     /**
-     * Evaluating the value of an operand node
+     * Evaluating the result of an operand node
      *
      * @param node
      * @return
@@ -637,7 +549,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         for (TclNode child : node.getChildren()) {
             switch (child.type) {
                 case NAME:
-                    str.append(readVariable(child.getValue()));
+                    str.append(getContext().getElement(child.getValue()));
                     break;
                 case SUBSTRING:
                 case STRING:
@@ -657,28 +569,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
     }
 
     /**
-     * Reading a variable or an array element based on the tlist string
-     *
-     * @param name
-     * @return
-     */
-    protected String readVariable(String name) {
-        String index = null;
-        //Checking if the tlist is a variable id or an array id
-        if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
-            index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
-            name = name.substring(0, name.lastIndexOf('('));
-        }
-        //Reading either the variable or an array element 
-        if (index == null) {
-            return context.getVaribale(name);
-        } else {
-            return context.getArrayElement(name, index);
-        }
-    }
-
-    /**
-     * Interpreting a string as a boolean value
+     * Interpreting a string as a boolean result
      *
      * @param str
      * @return
@@ -742,14 +633,14 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         //Creating a new instance of Tcl interpreter with the same context
         String result = null;
         AbstractTclInterpreter subinterpreter
-                = new TclInterpreter(new TclParser(new TclLexer(script)), context, false);
+                = new TclListInterpreter(new TclListParser(new TclLexer(script)), getContext(), false, getOut(), "cp1251");
         //Evaluating the script and catch errors that appear
         try {
             result = subinterpreter.run();
         } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException | AbstractTclInterpreter.TclCommandException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         }
-        output.append("[").append(subinterpreter.getOutput()).append("]\n");
+        getOutput().append("[").append(subinterpreter.getOutput()).append("]\n");
         return result;
     }
 
@@ -762,15 +653,14 @@ public class TclListInterpreter extends AbstractTclInterpreter {
      * @throws tclinterpreter.AbstractTclInterpreter.TclCommandException
      */
     @Override
-    public String run() throws TclParser.TclParserError, AbstractTclInterpreter.TclExecutionException, AbstractTclInterpreter.TclCommandException {
-        TclNode node = parser.parse();
-        output.append("Executing test script. First list node: ").append(node.getValue()).append(":\n");
+    public String run() throws AbstractTclParser.TclParserError, AbstractTclInterpreter.TclExecutionException, AbstractTclInterpreter.TclCommandException {
+        TclNode node = getParser().parse();
         String result = null;
         while (!node.getValue().equals("EOF")) {
             if (!node.getValue().equals("EOL") && !node.getValue().equals("SEMI")) {
-                result = interpretList(node);     
+                result = interpretList(node);
             }
-            node = parser.parse();
+            node = getParser().parse();
         }
         return result;
     }
@@ -857,5 +747,22 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             }
         }
         return lst;
+    }
+
+    /**
+     * Outputting debugging information
+     *
+     * @param res
+     * @param args
+     */
+    private void outputDebugInfo(String res, String name, String... args) {
+        getOutput().append(" ").
+                append("Command: ").
+                append(name).
+                append(" with args: ").
+                append(Arrays.asList(args).stream().collect(Collectors.joining(", "))).
+                append(" producing result: ").
+                append(res).
+                append("\n");
     }
 }

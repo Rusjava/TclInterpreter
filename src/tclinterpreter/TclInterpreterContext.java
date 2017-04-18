@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Context for Tcl interpreters containing variables and other attributes
+ * Context for Tcl interpreters containing VARIABLES and other attributes
  *
  * @author Ruslan Feshchenko
  * @version
@@ -28,19 +28,24 @@ import java.util.Map;
 public class TclInterpreterContext {
 
     /**
-     * The poiunter to the context of the enclosing Tcl interpreter
+     * The pointer to the context of the enclosing Tcl interpreter
      */
     protected TclInterpreterContext upperlevelcontext;
 
     /**
-     * Local variables associated with the context
+     * Local VARIABLES associated with the context
      */
-    protected Map<String, String> variables;
+    protected final Map<String, String> VARIABLES;
 
     /**
-     * Local arrays associated with the context
+     * Local ARRAYS associated with the context
      */
-    protected Map<String, Map<String, String>> arrays;
+    protected final Map<String, Map<String, String>> ARRAYS;
+
+    /**
+     * Tcl commands associated with the context
+     */
+    protected final Map<String, TclCommand<String[], String>> COMMANDS;
 
     /**
      * Constructor
@@ -48,27 +53,28 @@ public class TclInterpreterContext {
      * @param uppercontext the upper level context
      */
     public TclInterpreterContext(TclInterpreterContext uppercontext) {
-        variables = new HashMap<>();
-        arrays = new HashMap<>();
+        VARIABLES = new HashMap<>();
+        ARRAYS = new HashMap<>();
+        COMMANDS = new HashMap<>();
         this.upperlevelcontext = uppercontext;
     }
 
     /**
-     * Returning the variables map
+     * Returning the VARIABLES map
      *
      * @return
      */
     public Map<String, String> getVariables() {
-        return variables;
+        return VARIABLES;
     }
 
     /**
-     * Returning the arrays map
+     * Returning the ARRAYS map
      *
      * @return
      */
     public Map<String, Map<String, String>> getArrays() {
-        return arrays;
+        return ARRAYS;
     }
 
     /**
@@ -86,8 +92,8 @@ public class TclInterpreterContext {
      * @param name variable name
      * @return
      */
-    public String getVaribale(String name) {
-        return variables.get(name);
+    public String getVariable(String name) {
+        return VARIABLES.get(name);
     }
 
     /**
@@ -98,7 +104,7 @@ public class TclInterpreterContext {
      * @return
      */
     public String getArrayElement(String name, String index) {
-        return arrays.get(name) == null ? null : arrays.get(name).get(index);
+        return ARRAYS.get(name) == null ? null : ARRAYS.get(name).get(index);
     }
 
     /**
@@ -106,8 +112,8 @@ public class TclInterpreterContext {
      *
      * @param name variable name
      */
-    public void deleteVaribale(String name) {
-        variables.remove(name);
+    public void deleteVariable(String name) {
+        VARIABLES.remove(name);
     }
 
     /**
@@ -117,11 +123,11 @@ public class TclInterpreterContext {
      * @param index array index
      */
     public void deleteArrayElement(String name, String index) {
-        if (arrays.remove(name) != null) {
-            arrays.remove(name).remove(index);
+        if (ARRAYS.remove(name) != null) {
+            ARRAYS.remove(name).remove(index);
             //Removing array if it has become empty
-            if (arrays.remove(name).isEmpty()) {
-                arrays.remove(name);
+            if (ARRAYS.remove(name).isEmpty()) {
+                ARRAYS.remove(name);
             }
         }
     }
@@ -132,10 +138,10 @@ public class TclInterpreterContext {
      * @param name variable name
      * @param value variable value
      */
-    public void setVaribale(String name, String value) {
-        variables.put(name, value);
+    public void setVariable(String name, String value) {
+        VARIABLES.put(name, value);
     }
-    
+
     /**
      * Setting the value of a particular element of a local array
      *
@@ -145,9 +151,79 @@ public class TclInterpreterContext {
      */
     public void setArrayElement(String name, String index, String value) {
         //Creating the array if it does not exist
-        if (arrays.get(name) == null) {
-            arrays.put(name, new HashMap<>());
+        if (ARRAYS.get(name) == null) {
+            ARRAYS.put(name, new HashMap<>());
         }
-        arrays.get(name).put(index, value);
+        ARRAYS.get(name).put(index, value);
+    }
+
+    /**
+     * Returning a Tcl command
+     *
+     * @param cname
+     * @return
+     */
+    public TclCommand<String[], String> getCommand(String cname) {
+        return COMMANDS.get(cname);
+    }
+
+    /**
+     * Adding a new Tcl command
+     *
+     * @param cname
+     * @param cmd
+     */
+    public void addCommand(String cname, TclCommand<String[], String> cmd) {
+        COMMANDS.put(cname, cmd);
+    }
+
+    /**
+     * Getting a variable or an array element
+     * @param name
+     * @return
+     */
+    public String getElement(String name) {
+        String index;
+        //Checking if 'name' is the variable of array id
+        if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+            index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+            name = name.substring(0, name.lastIndexOf('('));
+            return getArrayElement(name, index);
+        } else {
+            return getVariable(name);
+        }
+    }
+    
+    /**
+     * Setting the value of a variable of an array element
+     * @param name
+     * @param value
+     */
+    public void setElement (String name, String value) {
+        String index;
+        //Checking if 'name' is the variable of array id
+        if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+            index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+            name = name.substring(0, name.lastIndexOf('('));
+            setArrayElement(name, index, value);
+        } else {
+            setVariable(name, value);
+        }
+    }
+    
+    /**
+     * Deleting a variable or an array element
+     * @param name
+     */
+    public void deleteElement(String name) {
+        String index;
+        //Checking if 'name' is the variable of array id
+        if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
+            index = name.substring(name.lastIndexOf('(') + 1, name.length() - 1);
+            name = name.substring(0, name.lastIndexOf('('));
+            deleteArrayElement(name, index);
+        } else {
+            deleteVariable(name);
+        }
     }
 }

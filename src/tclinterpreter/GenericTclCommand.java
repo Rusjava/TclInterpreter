@@ -16,6 +16,13 @@
  */
 package tclinterpreter;
 
+import java.io.OutputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import tcllexer.TclLexer;
+import tclparser.AbstractTclParser;
+import tclparser.TclListParser;
+
 /**
  * General class for string based Tcl commands implementing TclCommand interface
  *
@@ -25,9 +32,14 @@ package tclinterpreter;
 public class GenericTclCommand implements TclCommand<String[], String> {
 
     /**
+     * Names of arguments
+     */
+    protected String[] argNames = null;
+
+    /**
      * Tcl command body
      */
-    protected TclCommand<String[], String> command;
+    protected TclCommand<String[], String> command = null;
 
     /**
      * Minimal number of argument
@@ -40,7 +52,7 @@ public class GenericTclCommand implements TclCommand<String[], String> {
     protected String name;
 
     /**
-     * Constructor
+     * Constructor for predefined commands
      *
      * @param name
      * @param argNumber
@@ -50,6 +62,37 @@ public class GenericTclCommand implements TclCommand<String[], String> {
         this.name = name;
         this.argNumber = argNumber;
         this.command = command;
+    }
+
+    /**
+     * A constructor for commands defined by tcl scripts
+     *
+     * @param name - the name of the command
+     * @param script - a text of tcl script defining the command
+     * @param argNames - the argument names
+     * @param context - an execution context
+     * @param stream - the default output stream
+     */
+    public GenericTclCommand(String name, String script, String[] argNames, TclInterpreterContext context,
+            OutputStream stream) {
+        this.name = name;
+        this.argNumber = argNames.length;
+        this.argNames = argNames;
+        this.command = (String[] args) -> {
+            AbstractTclInterpreter inter = new TclListInterpreter(new TclListParser(new TclLexer(script)),
+                    context, true, stream, "cp1251");
+            //Going over all arguments and adding them to the context
+            for (int i = 0; i < argNumber; i++) {
+                inter.getContext().getVariables().put(argNames[i], args[i]);
+            }
+            String result = null;
+            try {
+                result = inter.run();
+            } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException | AbstractTclInterpreter.TclCommandException ex) {
+                Logger.getLogger(GenericTclCommand.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            return result;
+        };
     }
 
     /**

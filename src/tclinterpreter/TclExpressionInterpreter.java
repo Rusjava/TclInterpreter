@@ -347,7 +347,7 @@ public class TclExpressionInterpreter extends AbstractTclInterpreter {
 
     @Override
     public String run() throws AbstractTclParser.TclParserError, TclExecutionException {
-        String result = calculateNode(parser.parse()).toString();
+        String result = calculateNode(getParser().parse()).toString();
         return result;
     }
 

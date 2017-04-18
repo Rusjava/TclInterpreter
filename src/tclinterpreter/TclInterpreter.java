@@ -108,19 +108,19 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 //If at least two operands, set the variable or array element
                 value = readOpNode(node.getChildren().get(1));
                 if (index == null) {
-                    context.setVaribale(name, value);
-                    output.append(" ").append(name).append("=").append(value).append(";\n");
+                    getContext().setVariable(name, value);
+                    getOutput().append(" ").append(name).append("=").append(value).append(";\n");
                 } else {
-                    context.setArrayElement(name, index, value);
-                    output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                    getContext().setArrayElement(name, index, value);
+                    getOutput().append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
                 }
             } else if (index == null) {
                 //If only one operand, read and return the variable or array element
-                value = context.getVaribale(name);
-                output.append(" ").append(name).append("=").append(value).append(";\n");
+                value = getContext().getVariable(name);
+                getOutput().append(" ").append(name).append("=").append(value).append(";\n");
             } else {
-                value = context.getArrayElement(name, index);
-                output.append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                value = getContext().getArrayElement(name, index);
+                getOutput().append(" ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             return value;
         }));
@@ -139,11 +139,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Getting variable or array element value
             if (index == null) {
-                value = context.getVaribale(name);
-                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
+                value = getContext().getVariable(name);
+                getOutput().append("Intinial value: ").append(name).append("=").append(value).append(";\n");
             } else {
-                value = context.getArrayElement(name, index);
-                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                value = getContext().getArrayElement(name, index);
+                getOutput().append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             //If there are arguments then append them
             if (node.getChildren().size() >= 2) {
@@ -159,16 +159,16 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 value = appStr.toString();
                 //Setting new variable or array element value
                 if (index == null) {
-                    context.setVaribale(name, value);
+                    getContext().setVariable(name, value);
                 } else {
-                    context.setArrayElement(name, index, value);
+                    getContext().setArrayElement(name, index, value);
                 }
             }
             //Outputting the final value of the variable
             if (index == null) {
-                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
+                getOutput().append("Final value: ").append(name).append("=").append(value).append(";\n");
             } else {
-                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                getOutput().append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
 
             return value;
@@ -187,13 +187,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Checking if a variable or an array element needs to removed
             if (index == null) {
-                value = context.getVaribale(name);
-                context.deleteVaribale(name);
-                output.append(" ").append(name).append("=").append("undefined;");
+                value = getContext().getVariable(name);
+                getContext().deleteVariable(name);
+                getOutput().append(" ").append(name).append("=").append("undefined;");
             } else {
-                value = context.getArrayElement(name, index);
-                context.deleteArrayElement(name, index);
-                output.append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
+                value = getContext().getArrayElement(name, index);
+                getContext().deleteArrayElement(name, index);
+                getOutput().append(" ").append(name).append("(").append(index).append(")=").append("undefined;");
             }
             return value;
         }));
@@ -203,10 +203,10 @@ public class TclInterpreter extends AbstractTclInterpreter {
          */
         COMMANDS.put("puts", new OldGenericTclCommand("puts", 1, (TclCommand<TclNode, String>) (TclNode node) -> {
             String value = readOpNode(node.getChildren().get(0));
-            out.append("Tcl> ")
+            getOut().append("Tcl> ")
                     .append(value)
                     .append("\n");
-            output.append(" output: ").append(value).append(";\n");
+            getOutput().append(" output: ").append(value).append(";\n");
             return value;
         }));
 
@@ -217,7 +217,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             //The second round of substitutions
             String result = evaluateExpression(readOpNode(node.getChildren().get(0)), node);
             //Creating output
-            output.append(" expression=").append(result).append(";\n");
+            getOutput().append(" expression=").append(result).append(";\n");
             return result;
         }));
         /*
@@ -242,7 +242,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     if (readBooleanString(expression) == 1) {
                         //Parsing and interprerting the first body
                         result = evaluateScript(intresult);
-                        output.append(" if=then: ").append(result).append(";\n");
+                        getOutput().append(" if=then: ").append(result).append(";\n");
                         return result;
                     } else {
                         intresult = readOpNode(iter.next());
@@ -255,13 +255,13 @@ public class TclInterpreter extends AbstractTclInterpreter {
                                 intresult = readOpNode(iter.next());
                                 result = evaluateScript(intresult);
                             default:
-                                output.append(" if=else: ").append(result).append(";\n");
+                                getOutput().append(" if=else: ").append(result).append(";\n");
                                 return result;
                         }
                     }
                 }
             } catch (NoSuchElementException ex) {
-                output.append(" if=").append(result).append(";\n");
+                getOutput().append(" if=").append(result).append(";\n");
                 return result;
             }
         }));
@@ -292,7 +292,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 condition = evaluateExpression(conString, node);
             }
             //Writing the body evaluation condition as the output
-            output.append(" 'for' expression=").append(result).append(";\n");
+            getOutput().append(" 'for' expression=").append(result).append(";\n");
             return result;
         }));
 
@@ -315,7 +315,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 condition = evaluateExpression(conString, node);
             }
             //Writing the body evaluation condition as the output
-            output.append(" 'while' expression=").append(result).append(";\n");
+            getOutput().append(" 'while' expression=").append(result).append(";\n");
             return result;
         }));
 
@@ -428,7 +428,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             } catch (NumberFormatException ex) {
                 throw new TclExecutionException("String indexes must be integer numbers!", node);
             }
-            output.append(" string=").append(result).append(";\n");
+            getOutput().append(" string=").append(result).append(";\n");
             return result;
         }));
 
@@ -492,7 +492,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             } catch (MissingFormatArgumentException ex) {
                 throw new TclExecutionException("The number of formatters exceed the number of arguments!", node);
             }
-            output.append(" formatted string=").append(result).append(";\n");
+            getOutput().append(" formatted string=").append(result).append(";\n");
             return result;
         }));
         /*
@@ -504,7 +504,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             node.getChildren().stream().forEach((arg) -> {
                 result.append(" {").append(readOpNode(arg)).append("}");
             });
-            output.append("List: ").append(result).append(";\n");
+            getOutput().append("List: ").append(result).append(";\n");
             //Removing leading space
             if (result.length() != 0) {
                 result.deleteCharAt(0);
@@ -540,7 +540,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
                     throw new TclExecutionException("The index of a list exceeded list's dimensions!", node);
                 }
             }
-            output.append("Element of the '").append(tlist).append("' list = ").append(result).append(";\n");
+            getOutput().append("Element of the '").append(tlist).append("' list = ").append(result).append(";\n");
             return result;
         }));
 
@@ -556,7 +556,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             if (list != null) {
                 result = Integer.toString(list.size());
             }
-            output.append("The lenght of the '").append(tlist).append("' list = ").append(result).append(";\n");
+            getOutput().append("The lenght of the '").append(tlist).append("' list = ").append(result).append(";\n");
             return result;
         }));
 
@@ -568,7 +568,7 @@ public class TclInterpreter extends AbstractTclInterpreter {
             String tlist = readOpNode(node.getChildren().get(0));
             //List's content
             TclList list = TclList.splitList(tlist, readOpNode(node.getChildren().get(1)));
-            output.append("The string '").append(tlist).append("' was split into ").append(list).append(";\n");
+            getOutput().append("The string '").append(tlist).append("' was split into ").append(list).append(";\n");
             return list.toString();
         }));
 
@@ -586,11 +586,11 @@ public class TclInterpreter extends AbstractTclInterpreter {
             }
             //Getting the list variable or array element value
             if (index == null) {
-                value = context.getVaribale(name);
-                output.append("Intinial value: ").append(name).append("=").append(value).append(";\n");
+                value = getContext().getVariable(name);
+                getOutput().append("Intinial value: ").append(name).append("=").append(value).append(";\n");
             } else {
-                value = context.getArrayElement(name, index);
-                output.append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                value = getContext().getArrayElement(name, index);
+                getOutput().append("Intinial value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             //If at least two operands, append them to the list variable or array element (with a space)
             if (node.getChildren().size() >= 2) {
@@ -605,16 +605,16 @@ public class TclInterpreter extends AbstractTclInterpreter {
                 value = appStr.toString();
                 //Setting new list variable or array element value
                 if (index == null) {
-                    context.setVaribale(name, value);
+                    getContext().setVariable(name, value);
                 } else {
-                    context.setArrayElement(name, index, value);
+                    getContext().setArrayElement(name, index, value);
                 }
             }
             //Outputting the final value of the varibale or array element
             if (index == null) {
-                output.append("Final value: ").append(name).append("=").append(value).append(";\n");
+                getOutput().append("Final value: ").append(name).append("=").append(value).append(";\n");
             } else {
-                output.append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
+                getOutput().append("Final value: ").append(name).append("(").append(index).append(")=").append(value).append(";\n");
             }
             return value;
         }));
@@ -683,9 +683,9 @@ public class TclInterpreter extends AbstractTclInterpreter {
         }
         //Reading either the variable or an array element 
         if (index == null) {
-            return context.getVaribale(name);
+            return getContext().getVariable(name);
         } else {
-            return context.getArrayElement(name, index);
+            return getContext().getArrayElement(name, index);
         }
     }
 
@@ -755,14 +755,14 @@ public class TclInterpreter extends AbstractTclInterpreter {
         //Creating a new instance of Tcl interpreter with the same context
         String result = null;
         AbstractTclInterpreter subinterpreter
-                = new TclInterpreter(new TclParser(new TclLexer(script)), context, false);
+                = new TclInterpreter(new TclParser(new TclLexer(script)), getContext(), false);
         //Evaluating the script and catch errors that appear
         try {
             result = subinterpreter.run();
         } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException | AbstractTclInterpreter.TclCommandException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
         }
-        output.append("[").append(subinterpreter.getOutput()).append("]\n");
+        getOutput().append("[").append(subinterpreter.getOutput()).append("]\n");
         return result;
     }
 
@@ -794,8 +794,8 @@ public class TclInterpreter extends AbstractTclInterpreter {
      */
     @Override
     public String run() throws TclParser.TclParserError, TclExecutionException, TclCommandException {
-        TclNode root = parser.parse();
-        output.append("Executing ").append(root.getValue()).append(":\n");
+        TclNode root = getParser().parse();
+        getOutput().append("Executing ").append(root.getValue()).append(":\n");
         return executeProgram(root);
     }
 
