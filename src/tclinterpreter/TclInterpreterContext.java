@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Context for Tcl interpreters containing VARIABLES and other attributes
+ * Context for Tcl interpreters containing variables and other attributes
  *
  * @author Ruslan Feshchenko
  * @version
@@ -30,22 +30,22 @@ public class TclInterpreterContext {
     /**
      * The pointer to the context of the enclosing Tcl interpreter
      */
-    protected TclInterpreterContext upperlevelcontext;
+    private TclInterpreterContext upperlevelcontext;
 
     /**
-     * Local VARIABLES associated with the context
+     * Local variables associated with the context
      */
-    protected final Map<String, String> VARIABLES;
+    private final Map<String, String[]> variables;
 
     /**
-     * Local ARRAYS associated with the context
+     * Local arrays associated with the context
      */
-    protected final Map<String, Map<String, String>> ARRAYS;
+    private final Map<String, Map<String, String>> arrays;
 
     /**
      * Tcl commands associated with the context
      */
-    protected final Map<String, TclCommand<String[], String>> COMMANDS;
+    private final Map<String, TclCommand<String[], String>> commands;
 
     /**
      * Constructor
@@ -53,28 +53,37 @@ public class TclInterpreterContext {
      * @param uppercontext the upper level context
      */
     public TclInterpreterContext(TclInterpreterContext uppercontext) {
-        VARIABLES = new HashMap<>();
-        ARRAYS = new HashMap<>();
-        COMMANDS = new HashMap<>();
+        variables = new HashMap<>();
+        arrays = new HashMap<>();
+        commands = new HashMap<>();
         this.upperlevelcontext = uppercontext;
     }
 
     /**
-     * Returning the VARIABLES map
+     * Returning the variables map
      *
      * @return
      */
-    public Map<String, String> getVariables() {
-        return VARIABLES;
+    public Map<String, String[]> getVariables() {
+        return variables;
     }
 
     /**
-     * Returning the ARRAYS map
+     * Returning the arrays map
      *
      * @return
      */
     public Map<String, Map<String, String>> getArrays() {
-        return ARRAYS;
+        return arrays;
+    }
+
+    /**
+     * Returning the commands map
+     *
+     * @return
+     */
+    public Map<String, TclCommand<String[], String>> getCommands() {
+        return commands;
     }
 
     /**
@@ -82,8 +91,43 @@ public class TclInterpreterContext {
      *
      * @return
      */
-    public TclInterpreterContext getUpperLevelContext() {
+    public TclInterpreterContext getUpperlevelcontext() {
         return upperlevelcontext;
+    }
+
+    /**
+     * Returning the offset from the this context to the global context
+     *
+     * @return
+     */
+    public int getGlobalContextLevelOffset() {
+        TclInterpreterContext cnt = this;
+        int glc = -1;
+        while (cnt != null) {
+            cnt = cnt.getUpperlevelcontext();
+            glc++;
+        }
+        return glc;
+    }
+
+    /**
+     * Returning the context offset by "offset" from this context
+     *
+     * @param offset - offset from the current context
+     * @return
+     */
+    public TclInterpreterContext getUpperlevelcontext(int offset) {
+        TclInterpreterContext cnt = this;
+        int global = getGlobalContextLevelOffset();
+        //If more than global offset then return the global context
+        if (offset > getGlobalContextLevelOffset()) {
+            offset = global;
+        }
+        //Extracting the context with specified offset
+        for (int glc = 0; glc < offset; glc++) {
+            cnt = cnt.getUpperlevelcontext();
+        }
+        return cnt;
     }
 
     /**
@@ -93,7 +137,18 @@ public class TclInterpreterContext {
      * @return
      */
     public String getVariable(String name) {
-        return VARIABLES.get(name);
+        String[] obj = getVariableObject(name);
+        return obj == null ? null : obj[0];
+    }
+
+    /**
+     * Getting the array object of a particular local variable
+     *
+     * @param name variable name
+     * @return
+     */
+    public String[] getVariableObject(String name) {
+        return variables.get(name);
     }
 
     /**
@@ -104,7 +159,7 @@ public class TclInterpreterContext {
      * @return
      */
     public String getArrayElement(String name, String index) {
-        return ARRAYS.get(name) == null ? null : ARRAYS.get(name).get(index);
+        return arrays.get(name) == null ? null : arrays.get(name).get(index);
     }
 
     /**
@@ -113,7 +168,7 @@ public class TclInterpreterContext {
      * @param name variable name
      */
     public void deleteVariable(String name) {
-        VARIABLES.remove(name);
+        variables.remove(name);
     }
 
     /**
@@ -123,11 +178,11 @@ public class TclInterpreterContext {
      * @param index array index
      */
     public void deleteArrayElement(String name, String index) {
-        if (ARRAYS.remove(name) != null) {
-            ARRAYS.remove(name).remove(index);
+        if (arrays.remove(name) != null) {
+            arrays.remove(name).remove(index);
             //Removing array if it has become empty
-            if (ARRAYS.remove(name).isEmpty()) {
-                ARRAYS.remove(name);
+            if (arrays.remove(name).isEmpty()) {
+                arrays.remove(name);
             }
         }
     }
@@ -139,7 +194,20 @@ public class TclInterpreterContext {
      * @param value variable value
      */
     public void setVariable(String name, String value) {
-        VARIABLES.put(name, value);
+        if (variables.get(name) == null) {
+            variables.put(name, new String[1]);
+        }
+        variables.get(name)[0] = value;
+    }
+
+    /**
+     * Setting the object of a particular local variable
+     *
+     * @param name variable name
+     * @param value variable object value
+     */
+    public void setVariableObject(String name, String[] value) {
+        variables.put(name, value);
     }
 
     /**
@@ -151,10 +219,10 @@ public class TclInterpreterContext {
      */
     public void setArrayElement(String name, String index, String value) {
         //Creating the array if it does not exist
-        if (ARRAYS.get(name) == null) {
-            ARRAYS.put(name, new HashMap<>());
+        if (arrays.get(name) == null) {
+            arrays.put(name, new HashMap<>());
         }
-        ARRAYS.get(name).put(index, value);
+        arrays.get(name).put(index, value);
     }
 
     /**
@@ -164,7 +232,7 @@ public class TclInterpreterContext {
      * @return
      */
     public TclCommand<String[], String> getCommand(String cname) {
-        return COMMANDS.get(cname);
+        return commands.get(cname);
     }
 
     /**
@@ -174,11 +242,12 @@ public class TclInterpreterContext {
      * @param cmd
      */
     public void addCommand(String cname, TclCommand<String[], String> cmd) {
-        COMMANDS.put(cname, cmd);
+        commands.put(cname, cmd);
     }
 
     /**
      * Getting a variable or an array element
+     *
      * @param name
      * @return
      */
@@ -193,13 +262,14 @@ public class TclInterpreterContext {
             return getVariable(name);
         }
     }
-    
+
     /**
      * Setting the value of a variable of an array element
+     *
      * @param name
      * @param value
      */
-    public void setElement (String name, String value) {
+    public void setElement(String name, String value) {
         String index;
         //Checking if 'name' is the variable of array id
         if (name.charAt(name.length() - 1) == ')' && name.indexOf('(') != -1) {
@@ -210,9 +280,10 @@ public class TclInterpreterContext {
             setVariable(name, value);
         }
     }
-    
+
     /**
      * Deleting a variable or an array element
+     *
      * @param name
      */
     public void deleteElement(String name) {

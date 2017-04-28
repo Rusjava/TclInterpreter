@@ -49,6 +49,16 @@ import tclparser.TclListParser;
 public class TclListInterpreter extends AbstractTclInterpreter {
 
     /**
+     * The code for the 'break' command error
+     */
+    public static final String TCL_BREAK = "break";
+
+    /**
+     * The code for the 'continue' command error
+     */
+    public static final String TCL_CONTINUE = "continue";
+
+    /**
      * Constructor, which sets up the interpreter with an attached parser
      *
      * @param parser
@@ -210,6 +220,12 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             while (readBooleanString(condition) == 1) {
                 //Evaluating the body of the cycle
                 result = evaluateScript(action);
+                //Processing breaks and continuations
+                if (result == TCL_BREAK) {
+                    break;
+                } else if (result == TCL_CONTINUE) {
+                    //Do nothing
+                }
                 //Evaluating the final expression of the cycle
                 evaluateScript(finalString);
                 //Evaluating the conditional expression
@@ -233,6 +249,12 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             while (readBooleanString(condition) == 1) {
                 //Parsing and interprerting the cycle body
                 result = evaluateScript(action);
+                //Processing breaks and continuations
+                if (result == TCL_BREAK) {
+                    break;
+                } else if (result == TCL_CONTINUE) {
+                    //Do nothing
+                }
                 //Evaluating the first operand as a conditional expression
                 condition = evaluateExpression(conString);
             }
@@ -255,11 +277,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                         break;
                     case "index":
                         //The char at index position
-                        try {
-                            result = "" + args[1].charAt(Integer.parseInt(args[2]));
-                        } catch (NumberFormatException ex) {
-                            throw new AbstractTclInterpreter.TclExecutionException("The index of a string must be an integer number!", null);
-                        }
+                        result = "" + args[1].charAt(Integer.parseInt(args[2]));
                         break;
                     case "range":
                         //Returng a substring
@@ -286,11 +304,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                         //The index of the first character of the word contating the index character
                         result = args[1];
                         //Reading the character's index
-                        try {
-                            i = Integer.parseInt(args[2]);
-                        } catch (NumberFormatException ex) {
-                            throw new AbstractTclInterpreter.TclExecutionException("The index of a string must be an integer number!", null);
-                        }
+                        i = Integer.parseInt(args[2]);
                         k = i;
                         while ((Character.isLetterOrDigit(result.charAt(k)) || result.charAt(k) == '_')) {
                             k--;
@@ -304,11 +318,7 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                         //The index of the last+1 character of the word contating the index character
                         result = args[1];
                         //Reading the character's index
-                        try {
-                            i = Integer.parseInt(args[2]);
-                        } catch (NumberFormatException ex) {
-                            throw new AbstractTclInterpreter.TclExecutionException("The index of a string must be an integer number!", null);
-                        }
+                        i = Integer.parseInt(args[2]);
                         k = i;
                         while ((Character.isLetterOrDigit(result.charAt(k)) || result.charAt(k) == '_')) {
                             k++;
@@ -339,10 +349,12 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                         result = trimString(args, 0);
                         break;
                     default:
-                        throw new AbstractTclInterpreter.TclExecutionException("Unknown string subcommand!", null);
+                        throw new AbstractTclInterpreter.TclCommandException("Unknown string subcommand!", null,
+                                getContext().getCommand("string"));
                 }
             } catch (NumberFormatException ex) {
-                throw new AbstractTclInterpreter.TclExecutionException("String indexes must be integer numbers!", null);
+                throw new AbstractTclInterpreter.TclCommandException("String index must be an integer number!", null,
+                        getContext().getCommand("string"));
             }
             return result;
         }));
@@ -362,7 +374,8 @@ public class TclListInterpreter extends AbstractTclInterpreter {
             try {
                 fmts = getStringFormatters(args[0]);
             } catch (IllegalFormatException ex) {
-                throw new AbstractTclInterpreter.TclExecutionException("Illegal format string! - " + ex.getMessage(), null);
+                throw new AbstractTclInterpreter.TclCommandException("Illegal format string! - " + ex.getMessage(), null,
+                        getContext().getCommand("format"));
             }
             //Extracting values to print
             try {
@@ -392,22 +405,30 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                             fargs[i - 1] = fmStr.charAt(0);
                             break;
                         default:
-                            throw new AbstractTclInterpreter.TclExecutionException("Unsupported formatter! - " + fmStr, null);
+                            throw new AbstractTclInterpreter.TclCommandException("Unsupported formatter! - " + fmStr, null,
+                                    getContext().getCommand("format"));
                     }
                 }
             } catch (NumberFormatException ex) {
-                throw new AbstractTclInterpreter.TclExecutionException("An argument does not match the formatter! - "
-                        + ex.getMessage(), null);
+                throw new AbstractTclInterpreter.TclCommandException("An argument type does not match its formatter! - "
+                        + ex.getMessage(), null, getContext().getCommand("format"));
             }
             //Creating and applying string formatter
             Formatter fmt = new Formatter();
             try {
                 result = fmt.format(args[0], fargs).toString();
             } catch (MissingFormatArgumentException ex) {
-                throw new AbstractTclInterpreter.TclExecutionException("The number of formatters exceed the number of arguments!", null);
+                throw new AbstractTclInterpreter.TclCommandException("The number of formatters exceed the number of arguments!", null,
+                        getContext().getCommand("format"));
             }
             return result;
         }));
+
+        /**
+         * ========================================================== List List
+         * related commands
+         * ==========================================================
+         */
 
         /*
         'list' command - creating a Tcl list
@@ -446,9 +467,11 @@ public class TclListInterpreter extends AbstractTclInterpreter {
                     //The result is always at the zero element
                     result = list.get(Integer.parseInt(indexes.get(indexes.size() - 1)));
                 } catch (NumberFormatException ex) {
-                    throw new AbstractTclInterpreter.TclExecutionException("The index of a list element must be an integer number!", null);
+                    throw new AbstractTclInterpreter.TclCommandException("The index of a list element must be an integer number!", null,
+                            getContext().getCommand("lindex"));
                 } catch (IndexOutOfBoundsException ex) {
-                    throw new AbstractTclInterpreter.TclExecutionException("The index of a list exceeded list's dimensions!", null);
+                    throw new AbstractTclInterpreter.TclCommandException("The index of a list exceeded list's dimensions!",
+                            null, getContext().getCommand("lindex"));
                 }
             }
             return result;
@@ -500,14 +523,136 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         }));
 
         /*
+         'lassign' command definition
+         */
+        getContext().addCommand("lassign", new GenericTclCommand("lassign", 2, (TclCommand<String[], String>) (String... args) -> {
+            TclList list = TclList.getList(args[0]);
+            for (int i = 1; i < args.length; i++) {
+                if (i < list.size() + 1) {
+                    getContext().setVariable(args[i], list.get(i - 1));
+                } else {
+                    getContext().setVariable(args[i], "");
+                }
+            }
+            return new TclList(list.subList(Math.min(args.length - 1, list.size()), list.size())).toString();
+        }));
+
+        /*
+         'lrange' command definition
+         */
+        getContext().addCommand("lrange", new GenericTclCommand("lrange", 3, (TclCommand<String[], String>) (String... args) -> {
+            TclList list = TclList.getList(args[0]);
+            int start = 0, end = list.size() - 1;
+            try {
+                start = Integer.parseInt(args[1]);
+                end = Integer.parseInt(args[2]);
+            } catch (NumberFormatException ex) {
+                throw new TclCommandException("A list index in 'lrange' command is not an integer number!",
+                        null, getContext().getCommand("lrange"));
+            }
+            return new TclList(list.subList((start < 0 || start > list.size() - 1) ? 0 : start,
+                    (end < 0 || end > list.size() - 1) ? list.size() - 1 : end)).toString();
+        }));
+
+        /*
+         'linsert' command definition
+         */
+        getContext().addCommand("linsert", new GenericTclCommand("linsert", 3, (TclCommand<String[], String>) (String... args) -> {
+            TclList list = TclList.getList(args[0]), ilist = new TclList();
+            int start = 0;
+            try {
+                start = Integer.parseInt(args[1]);
+            } catch (NumberFormatException ex) {
+                throw new TclCommandException("A list index in 'linsert' command is not an integer number!",
+                        null, getContext().getCommand("linsert"));
+            }
+            for (int i = 2; i < args.length; i++) {
+                ilist.add(args[i]);
+            }
+            list.addAll((start < 0 || start > list.size() - 1) ? 0 : start, ilist);
+            return new TclList(list).toString();
+        }));
+
+        /**
+         * ========================================================== Procedure
+         * Procedure related commands
+         * ==========================================================
+         */
+
+        /*
         'proc' command - creation of a new command
          */
         getContext().addCommand("proc", new GenericTclCommand("proc", 3, (TclCommand<String[], String>) (String... args) -> {
             //List of arguments
             TclList list = TclList.getList(args[1]);
-            getContext().COMMANDS.put(args[0], new GenericTclCommand(args[0], args[2],
+            getContext().addCommand(args[0], new GenericTclCommand(args[0], args[2],
                     list.toArray(new String[list.size()]), getContext(), getOut()));
             return null;
+        }));
+
+        /*
+        'return' command - returning the procedure result
+         */
+        getContext().addCommand("return", new GenericTclCommand("return", 1, (TclCommand<String[], String>) (String... args) -> {
+            //Returning the argument
+            return args[0];
+        }));
+
+        /*
+        'global' command - creating refrence to a global variable
+         */
+        getContext().addCommand("global", new GenericTclCommand("global", 1, (TclCommand<String[], String>) (String... args) -> {
+            //Reading the variable object of the global variable
+            String[] varobject = getContext().getUpperlevelcontext(getContext()
+                    .getGlobalContextLevelOffset()).getVariableObject(args[0]);
+            //Adding a local reference to the global variable
+            getContext().setVariableObject(args[0], varobject);
+            return varobject[0];
+        }));
+
+        /*
+        'upvar' command - creating refrence to a varibale from another context
+         */
+        getContext().addCommand("upvar", new GenericTclCommand("upvar", 2, (TclCommand<String[], String>) (String... args) -> {
+            //Parsing the first argument and reading the variable object depending on results
+            int offset = 1, shift = 1;
+            String[] varobject = null;
+            try {
+                if (args[0].charAt(0) == '#') {
+                    offset = getContext()
+                            .getGlobalContextLevelOffset() - Integer.parseInt(args[0].substring(1));
+                } else {
+                    offset = Integer.parseInt(args[0]);
+                }
+            } catch (NumberFormatException ex) {
+                shift = 0;
+            }
+            //Creating variable references
+            for (int i = 0; i < Math.floor((args.length - shift) / 2); i++) {
+                //Reading the variable object from another context
+                varobject = getContext().getUpperlevelcontext(offset).getVariableObject(args[2 * i + shift]);
+                //Adding a local reference to the variable from another context
+                if (varobject != null) {
+                    getContext().setVariableObject(args[2 * i + shift + 1], varobject);
+                }
+            }
+            return varobject == null ? null : varobject[0];
+        }));
+
+        /*
+        'break' command - creation of a new command
+         */
+        getContext().addCommand("break", new GenericTclCommand("break", 0, (TclCommand<String[], String>) (String... args) -> {
+            //Breaking script execution
+            throw new TclCommandException("break", TCL_BREAK, getContext().getCommand("break"));
+        }));
+
+        /*
+        'continue' command - creation of a new command
+         */
+        getContext().addCommand("continue", new GenericTclCommand("continue", 0, (TclCommand<String[], String>) (String... args) -> {
+            //Breaking script execution
+            throw new TclCommandException("continue", TCL_CONTINUE, getContext().getCommand("continue"));
         }));
 
     }
@@ -610,7 +755,8 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         try {
             exprNode = new TclStringParser(new TclStringLexer(expr)).parse();
         } catch (AbstractTclParser.TclParserError ex) {
-            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression!", exprNode);
+            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression! ("+
+                    ex.toString()+")", exprNode);
         }
         //Interpreting the expression
         TclExpressionInterpreter inter = new TclExpressionInterpreter(
@@ -618,7 +764,8 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         try {
             result = inter.run();
         } catch (AbstractTclParser.TclParserError ex) {
-            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression!", exprNode);
+            throw new AbstractTclInterpreter.TclExecutionException("Syntax error in Tcl expression! ("+
+                    ex.toString()+")", exprNode);
         }
         return result;
     }
@@ -637,8 +784,14 @@ public class TclListInterpreter extends AbstractTclInterpreter {
         //Evaluating the script and catch errors that appear
         try {
             result = subinterpreter.run();
-        } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException | AbstractTclInterpreter.TclCommandException ex) {
+        } catch (AbstractTclParser.TclParserError | AbstractTclInterpreter.TclExecutionException ex) {
             Logger.getLogger(TclInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (TclCommandException ex) {
+            if (ex.getErrorCode() == TCL_CONTINUE || ex.getErrorCode() == TCL_BREAK) {
+                result = ex.getErrorCode();
+            } else {
+                Logger.getLogger(TclListInterpreter.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         getOutput().append("[").append(subinterpreter.getOutput()).append("]\n");
         return result;

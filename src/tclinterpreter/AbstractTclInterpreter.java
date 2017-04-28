@@ -61,7 +61,7 @@ public abstract class AbstractTclInterpreter {
      * @param out an output stream
      * @param encoding an encoding to be used for output encoding
      */
-    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, 
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext,
             OutputStream out, String encoding) {
         this.parser = parser;
         if (newcontext) {
@@ -86,7 +86,7 @@ public abstract class AbstractTclInterpreter {
      * context used
      * @param out an output stream
      */
-    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext, 
+    protected AbstractTclInterpreter(AbstractTclParser parser, TclInterpreterContext context, boolean newcontext,
             PrintStream out) {
         this.parser = parser;
         if (newcontext) {
@@ -140,6 +140,7 @@ public abstract class AbstractTclInterpreter {
 
     /**
      * Getting the Tcl interpreter context
+     *
      * @return the context
      */
     public final TclInterpreterContext getContext() {
@@ -148,6 +149,7 @@ public abstract class AbstractTclInterpreter {
 
     /**
      * Returning the default output stream
+     *
      * @return the out
      */
     public final PrintStream getOut() {
@@ -166,7 +168,7 @@ public abstract class AbstractTclInterpreter {
         protected TclNode currentnode;
 
         /**
-         * A construtor
+         * A constructor
          *
          * @param msg
          * @param currentnode the node being evaluated
@@ -181,7 +183,7 @@ public abstract class AbstractTclInterpreter {
             return super.getMessage() + " (at " + currentnode + " )";
         }
     }
-    
+
     /**
      * A general class for execution errors thrown by Tcl commands
      *
@@ -191,22 +193,37 @@ public abstract class AbstractTclInterpreter {
         /**
          * The command being evaluated
          */
-        protected TclCommand<String[],String> command;
+        protected TclCommand<String[], String> command;
 
         /**
-         * A construtor
+         * Error code
+         */
+        protected String error = null;
+
+        /**
+         * A constructor
          *
          * @param msg
+         * @param code
          * @param command
          */
-        public TclCommandException(String msg, TclCommand<String[],String> command) {
+        public TclCommandException(String msg, String code, TclCommand<String[], String> command) {
             super(msg);
             this.command = command;
+            this.error = code;
         }
 
         @Override
         public String toString() {
             return super.getMessage() + " (in " + command + " )";
+        }
+        
+        /**
+         * Returns the error code for this exception
+         * @return
+         */
+        public String getErrorCode() {
+            return error;
         }
     }
 }

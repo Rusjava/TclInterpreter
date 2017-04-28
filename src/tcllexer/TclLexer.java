@@ -136,13 +136,13 @@ public class TclLexer extends AbstractTclLexer {
         }
         return string.toString();
     }
-    
+
     /**
      * Reading a Tcl comment
-     * 
+     *
      * @return
      */
-    protected String readComment () {
+    protected String readComment() {
         StringBuilder string = new StringBuilder("");
         while (getCurrentchar() != '\n' && getCurrentchar() != '\r' && getCurrentchar() != 0) {
             string.append(getCurrentchar());
@@ -156,10 +156,10 @@ public class TclLexer extends AbstractTclLexer {
         /*
          What is the next token
          */
-        if (getCurrentchar() == '#' ) {
+        if (getCurrentchar() == '#' && (Character.isWhitespace(peekback()) || peekback() == ';')) {
             /*
             Returning a comment token
-            */
+             */
             advancePosition();
             return new TclToken(TclTokenType.CMT).setValue(readComment());
         } else if ((peekback() == '"' && qflag)

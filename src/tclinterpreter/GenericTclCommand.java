@@ -83,7 +83,7 @@ public class GenericTclCommand implements TclCommand<String[], String> {
                     context, true, stream, "cp1251");
             //Going over all arguments and adding them to the context
             for (int i = 0; i < argNumber; i++) {
-                inter.getContext().getVariables().put(argNames[i], args[i]);
+                inter.getContext().setVariable(argNames[i], args[i]);
             }
             String result = null;
             try {
@@ -127,12 +127,13 @@ public class GenericTclCommand implements TclCommand<String[], String> {
                 return command.apply(args);
             } catch (IndexOutOfBoundsException ex) {
                 throw new AbstractTclInterpreter.TclCommandException("Insufficient number of operands in '"
-                        + name + "' command!", command);
+                        + name + "' command!", null, this);
             }
         } else {
             //If less than argNumber operands, throw an error
             throw new AbstractTclInterpreter.TclCommandException(name
-                    + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!", command);
+                    + " command must have at least " + argNumber + " argument" + (argNumber > 1 ? "s" : "") + "!",
+                    null, this);
         }
     }
 }
