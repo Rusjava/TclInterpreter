@@ -23,7 +23,7 @@ import java.util.Map;
  * A class for TCL lexer
  *
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  */
 public class TclLexer extends AbstractTclLexer {
 

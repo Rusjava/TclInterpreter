@@ -16,13 +16,13 @@
  */
 package tclparser;
 
+import tcllexer.AbstractBasicTclLexer;
 import tcllexer.TclTokenType;
-import tcllexer.TclStringLexer;
 
 /**
  *
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  */
 public class TclStringParser extends AbstractTclParser {
 
@@ -31,7 +31,7 @@ public class TclStringParser extends AbstractTclParser {
      *
      * @param lexer a lexer to be used
      */
-    public TclStringParser(TclStringLexer lexer) {
+    public TclStringParser(AbstractBasicTclLexer lexer) {
         super(lexer);
     }
 

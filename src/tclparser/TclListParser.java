@@ -16,9 +16,9 @@
  */
 package tclparser;
 
-import tcllexer.TclLexer;
 import tcllexer.TclStringLexer;
 import java.util.List;
+import tcllexer.AbstractBasicTclLexer;
 import tcllexer.TclTokenType;
 
 /**
@@ -40,7 +40,7 @@ public class TclListParser extends AbstractTclParser {
      *
      * @param lexer
      */
-    public TclListParser(TclLexer lexer) {
+    public TclListParser(AbstractBasicTclLexer lexer) {
         super(lexer);
     }
 
@@ -66,7 +66,7 @@ public class TclListParser extends AbstractTclParser {
         //Beginng a new list
         newList = true;
         TclNode node = new TclNode(TclNodeType.LIST);
-        node.setValue("null");
+        node.setValue("EOF");
         TclNode operand = null;
         try {
             /*

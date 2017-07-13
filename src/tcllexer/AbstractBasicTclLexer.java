@@ -85,6 +85,7 @@ public abstract class AbstractBasicTclLexer {
             } else {
                 nextchar = 0;
             }
+            //Skipping any leading escaped end of line
             if (currentchar == '\\' && (nextchar == '\n' || nextchar == '\r')) {
                 char pchar = previouschar;
                 advancePosition();

@@ -16,9 +16,9 @@
  */
 package tclparser;
 
-import tcllexer.TclLexer;
 import tcllexer.TclStringLexer;
 import java.util.List;
+import tcllexer.AbstractBasicTclLexer;
 import tcllexer.TclTokenType;
 
 /**
@@ -34,7 +34,7 @@ public class TclParser extends AbstractTclParser {
      *
      * @param lexer
      */
-    public TclParser(TclLexer lexer) {
+    public TclParser(AbstractBasicTclLexer lexer) {
         super(lexer);
     }
 

@@ -16,9 +16,9 @@
  */
 package tclparser;
 
+import tcllexer.AbstractBasicTclLexer;
 import tcllexer.TclToken;
 import tcllexer.TclTokenType;
-import tcllexer.AbstractTclLexer;
 
 /**
  *
@@ -27,19 +27,25 @@ import tcllexer.AbstractTclLexer;
  */
 public abstract class AbstractTclParser {
 
+    /**
+     * Current token
+     */
     protected TclToken currenttoken;
-
+    
+    /**
+     * Previous token
+     */
     protected TclToken previoustoken;
     /**
      * The associated TclLexer
      */
-    protected AbstractTclLexer lexer;
+    protected AbstractBasicTclLexer lexer;
     
     /**
      * 
      * @param lexer
      */
-    public AbstractTclParser(AbstractTclLexer lexer) {
+    public AbstractTclParser(AbstractBasicTclLexer lexer) {
         super();
         this.previoustoken = new TclToken(TclTokenType.NULL);
         this.currenttoken = new TclToken(TclTokenType.NULL);

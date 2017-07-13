@@ -16,19 +16,19 @@
  */
 package tclparser;
 
-import tcllexer.TclExpressionLexer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import tcllexer.AbstractBasicTclLexer;
 import tcllexer.TclTokenType;
 
 /**
  *
  * @author Ruslan Feshchenko
- * @version 0.1
+ * @version 0.2
  */
 public class TclExpressionParser extends AbstractTclParser {
 
@@ -71,7 +71,7 @@ public class TclExpressionParser extends AbstractTclParser {
      *
      * @param lexer
      */
-    public TclExpressionParser(TclExpressionLexer lexer) {
+    public TclExpressionParser(AbstractBasicTclLexer lexer) {
         super(lexer);
     }
 
