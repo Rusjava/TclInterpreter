@@ -52,7 +52,7 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
     /**
      * Flag showing if the end of file has been reached
      */
-    private AtomicBoolean finished;
+    private boolean finished;
 
     /**
      * A general constructor parallel lexers
@@ -64,7 +64,6 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
         super(script, skipWhitespace);
         this.exc = Executors.newSingleThreadExecutor();
         this.tokenQueue = new ArrayBlockingQueue<>(MAXTKN);
-        this.finished = new AtomicBoolean(false);
         this.task = () -> {
             TclToken tk;
             //Retriving tokens until the queue is full or interrupted or end of file is reached
@@ -75,8 +74,8 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
                 } catch (InterruptedException ex) {
                     break;
                 }
+                //If EOF token, stop lexer
                 if (tk.type == TclTokenType.EOF) {
-                    finished.set(true);
                     break;
                 }
             }
@@ -86,26 +85,30 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
     @Override
     public TclToken getToken() {
         TclToken tk;
-        //Reading the top object from the queue
-        tk = tokenQueue.poll();
-        //Checking if the queue is empty
-        if (tk != null) {
-            return tk;
+        //Returning EOF token if the lexer is finished
+        if (finished) {
+            tk = new TclToken(TclTokenType.EOF);
         } else {
-            //Returning EOF token if the lexer is finished
-            if (finished.get()) {
-                exc.shutdown();
-                return new TclToken(TclTokenType.EOF);
+            //Reading the top object from the queue
+            tk = tokenQueue.poll();
+            //Checking if the queue is empty
+            if (tk == null) {
+                //If the queue is not finished, run a task to fill the queue in
+                exc.submit(task);
+                //If waiting is interrupted, return null
+                try {
+                    tk = tokenQueue.take();
+                } catch (InterruptedException ex) {
+                    tk = new TclToken(TclTokenType.NULL);
+                }
             }
-            //If the queue is not finished, run a task to fill the queue in
-            exc.submit(task);
-            //If waiting is interrupted, return null
-            try {
-                return tokenQueue.take();
-            } catch (InterruptedException ex) {
-                return new TclToken(TclTokenType.NULL);
+            //If EOF token, finishing thread pool and setting 'finished' flag
+            if (tk.type == TclTokenType.EOF) {
+                exc.shutdown();
+                finished = true;
             }
         }
+        return tk;
     }
 
     /**
@@ -155,6 +158,6 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
      * @return the finished
      */
     public boolean isFinished() {
-        return finished.get();
+        return finished;
     }
 }
