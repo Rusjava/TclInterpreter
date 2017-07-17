@@ -20,7 +20,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Basic abstract class for parallelized Tcl lexers
@@ -41,11 +40,6 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
     private final ExecutorService exc;
 
     /**
-     * The task to run in case the queue is empty
-     */
-    private final Runnable task;
-
-    /**
      * A queue for tokens
      */
     private final BlockingQueue<TclToken> tokenQueue;
@@ -64,10 +58,10 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
         super(script, skipWhitespace);
         this.exc = Executors.newSingleThreadExecutor();
         this.tokenQueue = new ArrayBlockingQueue<>(MAXTKN);
-        this.task = () -> {
+        exc.submit(() -> {
             TclToken tk;
             //Retriving tokens until the queue is full or interrupted or end of file is reached
-            for (int i = 0; i < MAXTKN; i++) {
+            while (true) {
                 tk = readToken();
                 try {
                     tokenQueue.put(tk);
@@ -79,7 +73,7 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
                     break;
                 }
             }
-        };
+        });
     }
 
     @Override
@@ -90,17 +84,10 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
             tk = new TclToken(TclTokenType.EOF);
         } else {
             //Reading the top object from the queue
-            tk = tokenQueue.poll();
-            //Checking if the queue is empty
-            if (tk == null) {
-                //If the queue is not finished, run a task to fill the queue in
-                exc.submit(task);
-                //If waiting is interrupted, return null
-                try {
-                    tk = tokenQueue.take();
-                } catch (InterruptedException ex) {
-                    tk = new TclToken(TclTokenType.NULL);
-                }
+            try {
+                tk = tokenQueue.take();
+            } catch (InterruptedException ex) {
+                tk = new TclToken(TclTokenType.NULL);
             }
             //If EOF token, finishing thread pool and setting 'finished' flag
             if (tk.type == TclTokenType.EOF) {
