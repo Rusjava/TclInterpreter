@@ -91,8 +91,7 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
             }
             //If EOF token, finishing thread pool and setting 'finished' flag
             if (tk.type == TclTokenType.EOF) {
-                exc.shutdown();
-                finished = true;
+                close();
             }
         }
         return tk;
@@ -146,5 +145,13 @@ public abstract class AbstractParallelTclLexer extends AbstractBasicTclLexer {
      */
     public boolean isFinished() {
         return finished;
+    }
+
+    /**
+     * Finishing the lexer
+     */
+    public void close() {
+        exc.shutdown();
+        finished = true;
     }
 }
